@@ -29,7 +29,7 @@ export default function HomePage() {
         </Link>
         <div className="landing-nav-links">
           <Link href="#geometry">Geometry</Link>
-          <Link href="#gallery">Gallery</Link>
+          <Link href="#runtime">Runtime</Link>
           <Link href="/docs">Docs</Link>
         </div>
         <div className="landing-nav-actions">
@@ -62,8 +62,8 @@ export default function HomePage() {
             <Link href="/docs" className="primary-button">
               Read the docs <ArrowRight size={17} />
             </Link>
-            <a className="secondary-button" href="#gallery">
-              See what it makes <CornerDownRight size={16} />
+            <a className="secondary-button" href="#geometry">
+              See how it works <CornerDownRight size={16} />
             </a>
           </div>
           <p className="release-note">Public alpha · no npm release yet · run from source</p>
@@ -102,31 +102,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="gallery-section" id="gallery">
-        <div className="gallery-heading">
-          <span className="section-index">02 / Made with Livery</span>
-          <h2>Small programs.<br /><em>Beautifully solved scenes.</em></h2>
-          <p>Repository fixtures rendered through Livery’s compiler and CLI—not hand-positioned mockups.</p>
-        </div>
-        <div className="gallery-grid">
-          <article>
-            <div className="gallery-canvas"><Image src="/agent-trace.svg" alt="Agent tool trace rendered by Livery" width={960} height={162} /></div>
-            <div><span>Agent systems</span><strong>Agent tool trace</strong><code>agent-trace.livery</code></div>
-          </article>
-          <article>
-            <div className="gallery-canvas"><Image src="/data-transform.svg" alt="Data transformation rendered by Livery" width={960} height={162} /></div>
-            <div><span>Data systems</span><strong>Transformation pipeline</strong><code>data-transform.livery</code></div>
-          </article>
-          <article>
-            <div className="gallery-canvas"><Image src="/timeline.svg" alt="Checkout timeline rendered by Livery" width={960} height={162} /></div>
-            <div><span>Stateful visuals</span><strong>Checkout timeline</strong><code>timeline.livery</code></div>
-          </article>
-        </div>
-      </section>
-
       <section className="runtime-section" id="runtime">
         <div className="runtime-copy">
-          <span className="section-index">03 / Portable by design</span>
+          <span className="section-index">02 / Portable by design</span>
           <h2>One scene.<br /><em>Everywhere it needs to be.</em></h2>
           <p>
             Compile once. Render in React or the browser, or export deterministic SVG, PNG, and JSON from the CLI.
