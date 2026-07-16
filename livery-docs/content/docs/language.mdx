@@ -103,7 +103,7 @@ Paint is deliberately bounded. Safe color literals and theme tokens are accepted
 
 ## Themes and icons
 
-Livery ships three restrained themes: `editorial`, `paper`, and `midnight`. Themes own typography, color, spacing, radius, stroke, elevation, and motion tokens. The renderer still respects exact component overrides.
+Livery ships six restrained themes: `editorial`, `paper`, `midnight`, `blackout`, `blueprint`, and `monochrome`. `blackout` is a true near-black high-contrast theme, `blueprint` adds cool technical geometry and a drafting grid, and `monochrome` removes hue and shadow for print-like output. Themes own typography, color, spacing, radius, stroke, elevation, and motion tokens. The renderer still respects exact component overrides.
 
 Generic icon names such as `credit-card`, `cloud`, `globe`, `lock`, `mail`, `package`, `search`, `sparkles`, `star`, `warning`, and `webhook` ship with core. A host can register additional trusted path definitions through `IconRegistry`; generated source can select registered names but cannot inject SVG paths.
 

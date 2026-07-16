@@ -10,10 +10,26 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 const initialSource = '';
 
 const prompts = [
-  'Show a browser request moving through an API, queue, worker, and Postgres.',
-  'Create a research agent that uses search and a reasoning model.',
-  'Draw checkout authorization with approved and declined states.',
-  'Explain a deployment pipeline from commit to production.',
+  {
+    title: 'Production checkout',
+    description: 'Services, payment, queue, workers, and data',
+    prompt: 'Design a production checkout architecture. Group it into Client, Commerce, Async processing, and Data. Show a customer browser calling a checkout API, the API authorizing payment with Stripe and writing an order to Postgres, then publishing to a queue consumed by a fulfillment worker. Represent the order event as the async connector label, not as a standalone node. Arrange Client, Commerce, and Async processing as one compact left-to-right row, with Data directly below Commerce. Keep frame sizes balanced, connector labels in the open gaps between frames, and use restrained color only for payment and success.',
+  },
+  {
+    title: 'Research agent loop',
+    description: 'Model, tools, memory, evaluation, and citations',
+    prompt: 'Create an AI research agent workflow. Show a user request entering a planner, a reasoning model deciding when to call web search and document retrieval tools, useful findings being stored in working memory, an evaluator checking evidence quality, and a final answer with citations returning to the user. Make the iterative tool loop clear without crossing connectors.',
+  },
+  {
+    title: 'Realtime data platform',
+    description: 'Events from ingestion to warehouse and dashboard',
+    prompt: 'Explain a realtime analytics platform from event ingestion to insight. Show product events entering an API, flowing into Kafka, being cleaned by a stream processor, written to a warehouse, transformed into metrics, and read by a live operations dashboard. Use one continuous top-to-bottom reading order. Stack the labeled Ingestion, Processing, Storage, and Consumption frames vertically; do not arrange sequential stages in a 2×2 grid. Keep each frame compact, use short connector labels, and distinguish streaming paths from stored-data reads.',
+  },
+  {
+    title: 'Safe deployment',
+    description: 'CI, canary release, observability, and rollback',
+    prompt: 'Visualize a safe deployment pipeline from commit to production. Show a developer commit triggering CI tests, an artifact build, staging verification, a canary deployment, health and error-rate checks, then either promotion to production or automatic rollback. Do not put every step in one tall frame. Use separate compact Build, Release, and Decision stages arranged as short rows, with a clearly visible split from health checks to promotion or rollback. Use success, warning, and danger tones only where they communicate release state.',
+  },
 ];
 
 type SubmissionOutput = {
@@ -35,7 +51,6 @@ export function Studio() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const compilation = useMemo(() => source.trim() ? render(source, { theme, width: 760 }) : { diagnostics: [] }, [source, theme]);
   const diagnostics = compilation.diagnostics;
-  const errors = diagnostics.filter(({ severity }) => severity === 'error');
 
   const { error, messages, sendMessage, status, stop } = useChat({
     transport: new DefaultChatTransport({ api: '/api/chat' }),
@@ -96,7 +111,12 @@ export function Studio() {
           {messages.length === 0 ? (
             <div className="studio-empty-chat">
               <span>Try a starting point</span>
-              {prompts.map((prompt) => <button key={prompt} onClick={() => runPrompt(prompt)} type="button">{prompt}<b aria-hidden>↗</b></button>)}
+              {prompts.map(({ title, description, prompt }) => (
+                <button key={title} onClick={() => runPrompt(prompt)} type="button">
+                  <span><strong>{title}</strong><small>{description}</small></span>
+                  <b aria-hidden>↗</b>
+                </button>
+              ))}
             </div>
           ) : messages.map((message) => <ChatMessage key={message.id} message={message} />)}
           {busy && <div className="studio-agent-progress"><span /><span /><span /><em>Drafting and checking</em></div>}
@@ -111,22 +131,22 @@ export function Studio() {
               event.currentTarget.form?.requestSubmit();
             }
           }} placeholder="Describe a system, workflow, or idea…" rows={3} value={input} />
-          <div><span>Enter to send · Shift + Enter for newline</span>{busy ? <button className="studio-stop-button" onClick={stop} type="button">Stop</button> : <button disabled={!input.trim()} type="submit">Generate <b aria-hidden>→</b></button>}</div>
+          <div>{busy ? <button className="studio-stop-button" onClick={stop} type="button">Stop</button> : <button disabled={!input.trim()} type="submit">Generate <b aria-hidden>→</b></button>}</div>
         </form>
       </section>
 
-      <section className="studio-canvas-panel" aria-label="Compiled diagram">
+      <section className="studio-canvas-panel" aria-label="Compiled diagram" data-theme={themeName}>
         <div className="studio-canvas-toolbar">
-          <div><span className="studio-eyebrow">Live canvas</span><strong>{!hasScene ? 'Ready for a prompt' : errors.length ? 'Keeping last valid scene' : 'Compiled successfully'}</strong></div>
           <div className="studio-canvas-actions">
             <label className="studio-theme-picker">
-              <span>Theme</span>
               <select aria-label="Canvas theme" onChange={(event) => setThemeName(event.target.value as BuiltInThemeName)} value={themeName}>
                 <option value="editorial">Editorial</option>
                 <option value="paper">Paper</option>
                 <option value="midnight">Midnight</option>
+                <option value="blackout">Blackout</option>
+                <option value="blueprint">Blueprint</option>
+                <option value="monochrome">Monochrome</option>
               </select>
-              <i aria-hidden />
             </label>
             <button aria-expanded={sourceOpen} onClick={() => setSourceOpen((value) => !value)} type="button">{sourceOpen ? 'Hide source' : 'View source'}</button>
           </div>
@@ -135,6 +155,7 @@ export function Studio() {
           {hasScene ? (
             <LiveryChatVisual
               fallback={<div className="studio-visual-fallback">The current source needs repair.</div>}
+              key={themeName}
               source={acceptedSource}
               streaming={busy}
               theme={theme}
@@ -143,13 +164,12 @@ export function Studio() {
             />
           ) : (
             <div className="studio-canvas-empty">
-              <div aria-hidden className="studio-canvas-empty-mark"><i /><i /><i /><i /></div>
+              <span aria-hidden className="studio-brand-mark studio-canvas-empty-logo"><i /><i /><i /><i /></span>
               <strong>Your visual starts here</strong>
               <p>Describe a system or choose a starting point.</p>
             </div>
           )}
         </div>
-        {hasScene && <div className="studio-canvas-caption"><span>VALIDATED OUTPUT</span><p>The canvas only changes after the Livery compiler accepts a complete revision.</p></div>}
       </section>
 
       {sourceOpen && (
