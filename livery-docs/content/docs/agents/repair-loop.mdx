@@ -1,0 +1,121 @@
+---
+title: Repair loop
+description: Feed bounded compiler diagnostics back to the model without starting over.
+---
+
+Model output will fail sometimes. The useful question is not whether it fails; it is whether the failure is cheap, bounded, and repairable.
+
+Livery diagnostics are designed for that loop.
+
+## Generate a repair request
+
+```ts
+import { createRepairPrompt, render } from "@jerkeyray/core";
+
+const result = render(source, { width: 720 });
+
+if (!result.svg) {
+  const repairPrompt = createRepairPrompt(source, result.diagnostics);
+  // Send repairPrompt to your model as the next user message.
+}
+```
+
+The generated prompt includes:
+
+- a strict source-only response contract
+- a bounded list of diagnostics
+- source locations or scene paths
+- repair advice and known IDs when available
+- a small source excerpt around the failure
+
+It does not dump the entire application context back into the model.
+
+## A bounded loop
+
+`callModel` below is your provider wrapper:
+
+```ts
+import {
+  createAgentGuide,
+  createRepairPrompt,
+  render,
+} from "@jerkeyray/core";
+
+const guide = createAgentGuide({ mode: "compact" });
+
+export async function generateVisual(userRequest: string) {
+  let source = await callModel({
+    system: guide,
+    user: userRequest,
+  });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const result = render(source, { width: 720 });
+
+    if (result.svg) {
+      return { source, ...result };
+    }
+
+    source = await callModel({
+      system: guide,
+      user: createRepairPrompt(source, result.diagnostics),
+    });
+  }
+
+  throw new Error("The model did not produce a valid Livery visual.");
+}
+```
+
+Three attempts is an example, not a sacred number. Keep the limit small. If two focused repairs cannot fix the source, a fourth full retry usually burns tokens without discovering a new idea.
+
+## Keep the original intent
+
+Repair calls should fix the reported source, not redesign the figure. `createRepairPrompt` asks for corrected Livery source and includes only the relevant excerpt.
+
+If the model keeps replacing the whole program, add one application-level instruction:
+
+```text
+Preserve the existing figure structure and labels unless a diagnostic
+requires changing them.
+```
+
+Do not add speculative fixes to the prompt before reading the diagnostics. A duplicate binding and a geometry collision are different failures.
+
+## Tune the prompt bounds
+
+```ts
+const repair = createRepairPrompt(source, diagnostics, {
+  contextLines: 2,
+  maxDiagnostics: 5,
+  maxExcerptLines: 20,
+  maxKnownIds: 8,
+  maxLineLength: 160,
+});
+```
+
+Defaults are conservative. Increase them only when your figures are large enough that the relevant context is genuinely missing.
+
+## Apply deterministic fixes first
+
+Some diagnostics include exact text edits:
+
+```ts
+import { applyDiagnosticFix } from "@jerkeyray/core";
+
+const fixed = applyDiagnosticFix(source, diagnostic);
+```
+
+If an exact compiler-provided edit exists, apply it before paying for another model call. Deterministic repair beats creative repair every time.
+
+## Log the right things
+
+For each attempt, keep:
+
+- model and prompt version
+- source length
+- diagnostic codes
+- whether a scene was retained, invalid, or ready
+- repair count and final outcome
+
+Avoid logging provider secrets or unrelated conversation content. The visual source and diagnostic codes are usually enough to understand generation quality.
+

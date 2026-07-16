@@ -1,0 +1,55 @@
+---
+title: Livery
+description: A visual language for agents.
+---
+
+Livery turns small programs into validated, responsive technical visuals.
+
+The important word there is **validated**. A renderer should not smile politely and draw a broken diagram because the source was almost correct. Livery compiles the program, solves the layout, checks the geometry, and only then hands a scene to the renderer.
+
+```text
+Livery source
+  → compile
+  → solve layout
+  → validate geometry
+  → render or export
+```
+
+If that pipeline fails, you get typed diagnostics instead of a best-effort mess.
+
+<Callout type="warn" title="Public alpha">
+  The packages are defined in the repository but are not published to npm yet. API examples in these docs describe the current public package boundaries. Do not copy an install command into production until a release is published.
+</Callout>
+
+## A small example
+
+```text
+figure request("Request path") {
+  client = person("Customer")
+  api = service("API")
+  database = database("Orders")
+
+  send = client.right -> api.left("request")
+  persist = api.right -> database.left("write", tone: success)
+
+  row(client, api, database, gap: xl)
+}
+```
+
+There are no board-level coordinates here. The bindings give every element a stable identity, the anchors make the connections explicit, and `row` gives the solver the composition rather than a pile of pixels.
+
+## Pick the path you need
+
+<Cards>
+  <Card title="Run the project" description="Build the monorepo and render your first local figure." href="/docs/getting-started" />
+  <Card title="Learn the language" description="Figures, bindings, layouts, connectors, canvases, and timelines." href="/docs/language" />
+  <Card title="Render in React" description="Static visuals, streamed source, timelines, and diagnostics." href="/docs/react" />
+  <Card title="Give it to an agent" description="Generate the release-matched guide and build a bounded repair loop." href="/docs/agents" />
+</Cards>
+
+## What Livery is for
+
+Livery is aimed at technical visuals inside agent products: request paths, tool traces, data pipelines, architecture figures, state transitions, and small explainers. It gives a model enough freedom to explain something visually without giving it arbitrary SVG, JavaScript, or an infinite canvas.
+
+That trade is deliberate. Livery is not a general illustration tool, and it is not trying to be one.
+

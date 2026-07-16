@@ -1,0 +1,95 @@
+---
+title: Diagnostics
+description: Read compiler failures, revision states, repair hints, and validation reports.
+---
+
+Livery rejects unsupported syntax and invalid geometry instead of silently dropping it. Diagnostics are part of the API, not console decoration.
+
+## Diagnostic shape
+
+```ts
+type Diagnostic = {
+  code: string;
+  severity: "error" | "warning" | "info";
+  message: string;
+  span?: {
+    start: { line: number; column: number; offset: number };
+    end: { line: number; column: number; offset: number };
+  };
+  path?: Array<string | number>;
+  repair?: {
+    description: string;
+    knownIds?: string[];
+    edits?: TextEdit[];
+  };
+};
+```
+
+`span` points back to authored source. `path` points into a compiled structure when the failure does not map cleanly to one token. `repair` carries advice and may include deterministic text edits.
+
+## Check the requested output
+
+```ts
+import { render } from "@jerkeyray/core";
+
+const result = render(source, { width: 720 });
+
+if (!result.svg) {
+  for (const item of result.diagnostics) {
+    console.error(`[${item.code}] ${item.message}`);
+  }
+}
+```
+
+Warnings can exist beside valid output. Check `result.svg` when you asked for SVG, `result.scene` when you need solved geometry, or `result.document` when you only need compilation.
+
+## Compiler versus geometry failures
+
+Compiler failures include malformed syntax, unknown components, unsupported properties, missing references, and invalid timeline targets. They usually have a source span.
+
+Geometry failures happen after compilation while solving or validating the board. They may include layout attempts and a validation report:
+
+```ts
+const { scene, report, attempts, diagnostics } = render(source, {
+  width: 420,
+});
+```
+
+Use attempts when debugging why a dense figure cannot fit a viewport. Do not expose the entire attempt list as user-facing copy.
+
+## Deterministic edits
+
+```ts
+import { applyDiagnosticFix } from "@jerkeyray/core";
+
+for (const item of diagnostics) {
+  const fixed = applyDiagnosticFix(source, item);
+  if (fixed) {
+    source = fixed;
+    break;
+  }
+}
+```
+
+The helper refuses overlapping or out-of-range edits. If no exact edit exists, use the repair description or generate a bounded [agent repair prompt](/docs/agents/repair-loop).
+
+## Browser revision states
+
+The Web and React runtimes expose `empty`, `ready`, `retained`, and `invalid` revisions.
+
+`retained` deserves special attention: the latest source failed, but the runtime still has a previous valid scene. This is normal during streaming. Treat it as a generation-quality signal, not an immediate UI failure.
+
+```tsx
+<LiveryVisual
+  source={source}
+  retainLastValid
+  onRevision={(revision) => {
+    if (revision.status === "retained") {
+      console.debug(revision.diagnostics);
+    }
+  }}
+/>
+```
+
+Once generation is complete, invalid or retained final source should enter your repair or fallback path.
+

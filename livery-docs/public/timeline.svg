@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="162" viewBox="0 0 960 162" role="img" aria-label="Checkout state" aria-describedby="checkout_state-desc">
+  <desc id="checkout_state-desc">Checkout state: 3 elements and 1 connections.</desc>
+  <rect width="960" height="162" fill="#f8fafc"/>
+  <defs>
+    <marker id="checkout_state-arrow-authorize" markerWidth="5" markerHeight="5" refX="4.6" refY="2.5" orient="auto"><path d="M 0 0 L 5 2.5 L 0 5 z" fill="#8492a6"/></marker>
+    <filter id="checkout_state-card-shadow" x="-15%" y="-20%" width="130%" height="150%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#101828" flood-opacity="0.08"/></filter>
+  </defs>
+  <text x="20" y="27" font-family="Inter,system-ui,sans-serif" font-size="14" font-weight="700" fill="#172033">Checkout state</text>
+  <g transform="translate(0 42)">
+    <g data-livery-connector="authorize" data-livery-variant="directional">
+      <path data-livery-id="authorize" d="M 446.088475 58 L 522.0854455 58" fill="none" stroke="#8492a6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#checkout_state-arrow-authorize)"/>
+      <rect x="459.17543525" y="28" width="49.82305" height="16" rx="2" fill="#f8fafc" fill-opacity="0.98"/>
+      <text x="484.08696025" y="36" dominant-baseline="middle" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="10" font-weight="600" fill="#64748b">authorize</text>
+    </g>
+    <g data-livery-id="api">
+      <rect x="301.74063400000006" y="24" width="144.34784099999996" height="68" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+      <g data-livery-glyph="service" transform="translate(318.74063400000006 49) scale(0.75)" fill="none" stroke="#64748b" stroke-width="1.8666666666666665" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+        <path d="M4 5h16v14H4z"/>
+        <path d="M8 9h8"/>
+        <path d="M8 13h5"/>
+      </g>
+      <text x="351.74063400000006" y="53" text-anchor="start" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600" fill="#172033">
+        <tspan x="351.74063400000006" dy="0">Checkout</tspan>
+        <tspan x="351.74063400000006" dy="18">API</tspan>
+      </text>
+    </g>
+    <g data-livery-id="payment">
+      <rect x="522.0854455" y="24" width="128" height="68" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+      <g data-livery-glyph="service" transform="translate(539.0854455 49) scale(0.75)" fill="none" stroke="#64748b" stroke-width="1.8666666666666665" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+        <path d="M4 5h16v14H4z"/>
+        <path d="M8 9h8"/>
+        <path d="M8 13h5"/>
+      </g>
+      <text x="572.0854455" y="62" text-anchor="start" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600" fill="#172033">
+        <tspan x="572.0854455" dy="0">Payment</tspan>
+      </text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,75 @@
+---
+title: Agent guide
+description: Give an agent the right language contract without copying a stale grammar prompt.
+---
+
+Agents are good at producing structured text right up until the structure becomes important. Then they invent a property, forget an ID, or return three paragraphs explaining the diagram they did not actually generate.
+
+Livery handles this with a small release-matched guide and compiler diagnostics. The model proposes source; the compiler decides whether that source is real.
+
+## Do not maintain the grammar prompt by hand
+
+Generate it from the installed version:
+
+```ts
+import { createAgentGuide } from "@jerkeyray/core";
+
+const systemGuide = createAgentGuide({ mode: "compact" });
+```
+
+The compact guide includes the supported components, layouts, anchors, timeline operations, and the output contract. It is intentionally small enough to include in every generation request.
+
+For tools that need a larger static reference, use:
+
+```ts
+const referenceGuide = createAgentGuide({ mode: "reference" });
+```
+
+The reference version adds keywords, primitives, constraints, tokens, and the standard-library catalog. It is useful for retrieval, tool help, or a dedicated visual-generation agent. It is usually unnecessary in the hot path.
+
+## The generation contract
+
+The built-in guide asks the model to:
+
+- return only Livery source, with no Markdown or explanation
+- produce one figure
+- use stable bindings and concise labels
+- compose with supported layouts
+- connect explicit anchors
+- avoid JavaScript, I/O, recursion, arbitrary SVG, and unsupported properties
+
+That last part matters. Livery source may come from an LLM, but it is not executable model output. The language stays bounded and the compiler treats labels as data.
+
+## A sane pipeline
+
+```text
+user intent
+  → model + compact guide
+  → candidate Livery source
+  → compile and render
+  → valid scene
+      or
+    typed diagnostics → bounded repair request
+```
+
+The compiler belongs inside the loop, not after it. If you wait until the UI tries to display the result, you have already thrown away the best repair signal.
+
+## Compact or reference?
+
+| Mode | Use it for |
+| --- | --- |
+| `compact` | Normal generation requests, chat turns, and repair calls |
+| `reference` | Retrieval documents, tool help, offline agents, and debugging unfamiliar syntax |
+
+Start compact. Add reference material only when the task genuinely needs it.
+
+## Provider independence
+
+Livery does not call a model and does not need provider keys. Use the SDK, gateway, or local model you already trust. The library provides the language contract, validation, and repair prompt; your application owns model selection, rate limits, retries, and logging.
+
+## Next
+
+- [Generate good source](/docs/agents/generation)
+- [Build a repair loop](/docs/agents/repair-loop)
+- [Understand diagnostics](/docs/diagnostics)
+

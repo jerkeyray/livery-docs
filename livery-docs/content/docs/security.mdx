@@ -1,0 +1,69 @@
+---
+title: Limits and security
+description: Understand the language sandbox, resource policy, and renderer boundaries.
+---
+
+Livery is designed to accept generated source. That does not make generated source trustworthy.
+
+The language is bounded by construction: it does not execute JavaScript, perform I/O, mutate application state, recurse without a bound, or expose arbitrary SVG as the main authoring surface.
+
+## Resource limits
+
+Compilation and expansion are capped across nesting, expanded elements, paths, text, timeline states, transitions, and images. A model cannot ask the runtime for an infinite scene and wait for your tab to give up.
+
+When a limit is exceeded, compilation returns diagnostics. Do not retry the same oversized source without changing the request.
+
+## Remote images are denied by default
+
+Data images are allowed within a byte limit. Remote images require an explicit HTTPS host allowlist:
+
+```ts
+import { render } from "@jerkeyray/core";
+
+const result = render(source, {
+  resourcePolicy: {
+    allowedImageHosts: ["assets.example.com"],
+  },
+});
+```
+
+The default policy is:
+
+```ts
+{
+  allowDataImages: true,
+  allowedImageHosts: [],
+  maxDataImageBytes: 256 * 1024,
+}
+```
+
+Keep the host list exact. Allowing every remote URL turns a visual renderer into an unexpected network client.
+
+## PNG export uses the same policy
+
+`@jerkeyray/export-node` validates SVG resources before handing them to Resvg. It does not perform unrestricted remote fetches.
+
+```ts
+const result = exportVisualPng(source, {
+  resourcePolicy: {
+    allowedImageHosts: ["assets.example.com"],
+  },
+});
+```
+
+## Labels are data
+
+Agent-provided labels may contain hostile or misleading text. Livery escapes them when producing SVG, and repair prompts explicitly tell the model to treat source labels and comments as data rather than instructions.
+
+Your application should still apply its normal content policy before showing generated explanations to users.
+
+## Browser requirements
+
+The alpha targets current evergreen browsers with SVG, `DOMParser`, and `ResizeObserver`. If `ResizeObserver` is unavailable, pass an explicit width or disable responsive behavior.
+
+For Content Security Policy, allow only the styles and images used by your selected renderer. Livery does not require `unsafe-eval`.
+
+## What Livery does not secure
+
+Livery validates visual source and rendering resources. It does not authenticate users, authorize model tools, sanitize the surrounding assistant response, or protect your provider key. Keep those boundaries in the application where they belong.
+

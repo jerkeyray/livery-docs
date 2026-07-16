@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="240" viewBox="0 0 720 240">
+  <defs>
+    <marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <path d="M0 0L7 3.5L0 7z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <g fill="#fff" stroke="#dbe2ea">
+    <rect x="20" y="80" width="130" height="64" rx="6"/>
+    <rect x="200" y="80" width="140" height="64" rx="6"/>
+    <rect x="390" y="30" width="140" height="64" rx="6"/>
+    <rect x="570" y="130" width="130" height="64" rx="6"/>
+  </g>
+  <g fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)">
+    <path d="M150 112H200"/>
+    <path d="M340 100C365 100 365 62 390 62"/>
+    <path d="M390 78C365 78 365 120 340 120"/>
+    <path d="M340 124C455 124 455 162 570 162"/>
+  </g>
+  <g fill="#111827" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600" text-anchor="middle">
+    <text x="85" y="117">Customer</text>
+    <text x="270" y="117">Checkout API</text>
+    <text x="460" y="67">Payment provider</text>
+    <text x="635" y="167">Orders</text>
+  </g>
+</svg>

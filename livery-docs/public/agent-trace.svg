@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="162" viewBox="0 0 960 162" role="img" aria-label="Agent tool trace" aria-describedby="agent_trace-desc">
+  <desc id="agent_trace-desc">Agent tool trace: 4 elements and 2 connections.</desc>
+  <rect width="960" height="162" fill="#f8fafc"/>
+  <defs>
+    <marker id="agent_trace-arrow-use_search" markerWidth="5" markerHeight="5" refX="4.6" refY="2.5" orient="auto"><path d="M 0 0 L 5 2.5 L 0 5 z" fill="#8492a6"/></marker>
+    <marker id="agent_trace-arrow-reason" markerWidth="5" markerHeight="5" refX="4.6" refY="2.5" orient="auto"><path d="M 0 0 L 5 2.5 L 0 5 z" fill="#8492a6"/></marker>
+    <filter id="agent_trace-card-shadow" x="-15%" y="-20%" width="130%" height="150%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#101828" flood-opacity="0.08"/></filter>
+  </defs>
+  <text x="20" y="27" font-family="Inter,system-ui,sans-serif" font-size="14" font-weight="700" fill="#172033">Agent tool trace</text>
+  <g transform="translate(0 42)">
+    <g data-livery-connector="use_search" data-livery-variant="async">
+      <path data-livery-id="use_search" d="M 325.392507 60 L 418 60" fill="none" stroke="#8492a6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 4" marker-end="url(#agent_trace-arrow-use_search)"/>
+      <rect x="355.3360035" y="30" width="32.7205" height="16" rx="2" fill="#f8fafc" fill-opacity="0.98"/>
+      <text x="371.6962535" y="38" dominant-baseline="middle" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="10" font-weight="600" fill="#64748b">query</text>
+    </g>
+    <g data-livery-connector="reason" data-livery-variant="data">
+      <path data-livery-id="reason" d="M 542 60 L 630.344468 60" fill="none" stroke="#8492a6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 3"/>
+      <rect x="562.3706090000001" y="30" width="47.603249999999996" height="16" rx="2" fill="#f8fafc" fill-opacity="0.98"/>
+      <text x="586.172234" y="38" dominant-baseline="middle" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="10" font-weight="600" fill="#64748b">evidence</text>
+    </g>
+    <g data-livery-id="agent">
+      <rect x="164.43612100000004" y="24" width="160.95638599999998" height="72" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+      <g data-livery-glyph="agent" transform="translate(183.43612100000004 51) scale(0.75)" fill="none" stroke="#64748b" stroke-width="1.8666666666666665" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+        <path d="M12 8V4H8"/>
+        <path d="M8 4h8"/>
+        <path d="M5 8h14v11H5z"/>
+        <path d="M9 13h.01"/>
+        <path d="M15 13h.01"/>
+        <path d="M9 17h6"/>
+      </g>
+      <text x="219.43612100000004" y="64" text-anchor="start" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600" fill="#172033">
+        <tspan x="219.43612100000004" dy="0">Research agent</tspan>
+      </text>
+    </g>
+    <g data-livery-id="search">
+      <rect x="418" y="28" width="124" height="64" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+      <g data-livery-glyph="tool" transform="translate(435 51) scale(0.75)" fill="none" stroke="#64748b" stroke-width="1.8666666666666665" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+        <path d="M14.7 6.3a4 4 0 0 0-5-5L7 4l3 3 2.7-.7 6.9 6.9a2 2 0 1 1-2.8 2.8l-6.9-6.9L9 12l-3-3-2.7 2.7a4 4 0 0 0 5 5"/>
+      </g>
+      <text x="465" y="64" text-anchor="start" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600" fill="#172033">
+        <tspan x="465" dy="0">Search</tspan>
+      </text>
+    </g>
+    <g data-livery-id="model">
+      <rect x="630.344468" y="24" width="169.48243599999998" height="72" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+      <g data-livery-glyph="model" transform="translate(649.344468 51) scale(0.75)" fill="none" stroke="#64748b" stroke-width="1.8666666666666665" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+        <path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/>
+        <path d="M19 3v4"/>
+        <path d="M17 5h4"/>
+      </g>
+      <text x="685.344468" y="64" text-anchor="start" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600" fill="#172033">
+        <tspan x="685.344468" dy="0">Reasoning model</tspan>
+      </text>
+    </g>
+  </g>
+</svg>
