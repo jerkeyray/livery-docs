@@ -69,7 +69,59 @@ component Pair(left: string, right: string = "Worker") {
 }
 ```
 
-Parameters support `string`, `number`, `boolean`, and `tone`. Expansion is bounded, so a component cannot recursively create an unbounded scene.
+Parameters support `string`, `number`, `boolean`, `tone`, `paint`, `length`, and `identifier`. Expansion is bounded, so a component cannot recursively create an unbounded scene.
+
+## Visual styling
+
+Every standard component accepts the same bounded visual vocabulary:
+
+```text
+stripe = service(
+  "Stripe",
+  subtitle: "Payment provider",
+  icon: "credit-card",
+  variant: soft,
+  fill: "#f3e8ff",
+  stroke: "#7c3aed",
+  color: "#4c1d95",
+  iconColor: "#7c3aed",
+  radius: $radius.lg,
+  strokeWidth: 2,
+  fontSize: 14,
+  fontWeight: 650,
+  width: 180,
+  height: 76,
+  opacity: 1
+)
+```
+
+Use `default`, `muted`, `emphasis`, `soft`, `solid`, or `ghost` for `variant`. Prefer a semantic `tone`—`info`, `success`, `warning`, or `danger`—when color communicates meaning. Exact paint overrides are for branded elements, stable categories, and intentional emphasis.
+
+The precedence is deterministic: theme → variant → semantic tone → component override → timeline state. A timeline can therefore communicate the current state without permanently rewriting the component's base appearance.
+
+Paint is deliberately bounded. Safe color literals and theme tokens are accepted; `url(...)`, arbitrary SVG, and JavaScript are not.
+
+## Themes and icons
+
+Livery ships three restrained themes: `editorial`, `paper`, and `midnight`. Themes own typography, color, spacing, radius, stroke, elevation, and motion tokens. The renderer still respects exact component overrides.
+
+Generic icon names such as `credit-card`, `cloud`, `globe`, `lock`, `mail`, `package`, `search`, `sparkles`, `star`, `warning`, and `webhook` ship with core. A host can register additional trusted path definitions through `IconRegistry`; generated source can select registered names but cannot inject SVG paths.
+
+## Frames and hierarchy
+
+Use a nested `frame` to describe a subsystem or architecture boundary while keeping its children in normal macro layout:
+
+```text
+figure checkout("Checkout") {
+  commerce = frame("Commerce", subtitle: "Core services", layout: row, gap: lg) {
+    api = service("Checkout API")
+    orders = database("Orders")
+    write = api.right -> orders.left("write")
+  }
+}
+```
+
+Nested bindings keep stable qualified identities such as `commerce.api`. A frame may use `row`, `column`, `grid`, `stack`, or `overlay`, plus padding, background, border, radius, and explicit bounded dimensions.
 
 ## Connectors and anchors
 
@@ -155,6 +207,8 @@ The supported operations are `show`, `hide`, `focus`, `trace`, and `set`. Use a 
 - Keep labels short. Layout cannot rescue a paragraph inside a node.
 - Bind anything you need to connect, animate, inspect, or repair.
 - Prefer macro layout and spacing tokens over board-level coordinates.
+- Use color for categories, emphasis, or state; keep most nodes neutral.
+- Prefer `soft` for categories, `solid` for a focal node, and `ghost` for secondary context.
 - Use one figure per generated response.
 - Treat every diagnostic as real. Unknown calls and properties are not silently ignored.
 

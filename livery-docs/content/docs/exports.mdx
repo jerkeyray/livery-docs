@@ -8,10 +8,11 @@ React, the browser runtime, SVG, JSON, PNG, and the CLI all start from the same 
 ## SVG
 
 ```ts
-import { exportVisual } from "@jerkeyray/core";
+import { exportVisual, paperTheme } from "@jerkeyray/core";
 
 const result = exportVisual(source, {
   format: "svg",
+  theme: paperTheme,
   width: 720,
 });
 
@@ -64,6 +65,7 @@ The CLI accepts a file or stdin and infers the format from the output extension:
 ```sh
 livery diagram.livery --output diagram.svg
 livery diagram.livery --output diagram.png --scale 2
+livery diagram.livery --output diagram.svg --theme midnight
 cat diagram.livery | livery - --format json --pretty
 ```
 
@@ -78,6 +80,8 @@ livery diagram.livery \
 
 The process reports diagnostics to stderr and exits unsuccessfully when no requested output can be produced.
 
+`--theme` accepts `editorial`, `paper`, or `midnight`. Programmatic exports additionally accept a custom `LiveryTheme` and trusted `IconRegistry`.
+
 ## Responsive export is multiple solves
 
 An SVG has one solved width. If you need chat, article, and expanded variants, render each width deliberately:
@@ -90,4 +94,3 @@ for (const width of [360, 720, 1200]) {
 ```
 
 The source stays the same; the pinboard solve changes with the available width.
-

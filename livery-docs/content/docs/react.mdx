@@ -59,6 +59,22 @@ export function AssistantVisual({
 
 The fallback appears only after streaming has finished and the final source is invalid. During the stream, the component prefers the last valid scene.
 
+## Themes and trusted icons
+
+The same render options work in React, the browser runtime, SVG, PNG, and the CLI:
+
+```tsx
+import { midnightTheme, type IconRegistry } from "@jerkeyray/core";
+
+const icons: IconRegistry = {
+  stripe: ["M3 7h18", "M6 12h12", "M8 17h8"],
+};
+
+<LiveryVisual source={source} theme={midnightTheme} icons={icons} />
+```
+
+Registered values are trusted SVG path `d` definitions supplied by your application. Never build the registry from model output. A source program that names an unavailable icon receives a typed `resource.icon_not_registered` diagnostic.
+
 ## Revision states
 
 Every revision has one of four statuses:
@@ -123,4 +139,3 @@ Leave `state` undefined for internal control. Once you pass it, your application
 ```
 
 Prefer props for normal React state. Reach for the instance when integrating with an external controller or a non-React event source.
-

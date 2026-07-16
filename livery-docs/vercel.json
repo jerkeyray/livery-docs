@@ -1,0 +1,5 @@
+{
+  "installCommand": "node scripts/bootstrap-livery.mjs && bun install --frozen-lockfile",
+  "buildCommand": "bun run build",
+  "framework": "nextjs"
+}

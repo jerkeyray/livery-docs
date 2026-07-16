@@ -12,6 +12,7 @@ export function baseOptions(): BaseLayoutProps {
         </span>
       ),
     },
+    links: [{ text: 'Studio', url: '/studio' }],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   };
 }

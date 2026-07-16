@@ -3,15 +3,15 @@
 This is a Next.js application generated with
 [Create Fumadocs](https://github.com/fuma-nama/fumadocs).
 
-Run development server:
+Bootstrap Livery, install dependencies, and run the development server:
 
 ```bash
-npm run dev
-# or
-pnpm dev
-# or
-yarn dev
+bun run bootstrap:livery
+bun install
+bun run dev
 ```
+
+The bootstrap command builds clean package snapshots from a sibling `livery` checkout when available. In a standalone checkout it clones `https://github.com/jerkeyray/livery.git` into the ignored `.vendor` directory. Set `LIVERY_REPOSITORY_REF` to pin a branch or release tag for deployment.
 
 Open http://localhost:3000 with your browser to see the result.
 

@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Check,
   Coffee,
-  CornerDownRight,
   Sparkles,
 } from 'lucide-react';
 import { HeroDemo } from '@/components/hero-demo';
@@ -28,8 +27,6 @@ export default function HomePage() {
           <span>livery</span>
         </Link>
         <div className="landing-nav-links">
-          <Link href="#geometry">Geometry</Link>
-          <Link href="#runtime">Runtime</Link>
           <Link href="/docs">Docs</Link>
         </div>
         <div className="landing-nav-actions">
@@ -48,7 +45,7 @@ export default function HomePage() {
       <section className="hero-section">
         <div className="hero-copy">
           <div className="eyebrow">
-            <span className="status-dot" /> Public alpha <i /> Built for agents &amp; humans
+            Built for agents &amp; humans
           </div>
           <h1>
             Make systems
@@ -59,14 +56,11 @@ export default function HomePage() {
             responsive technical diagrams.
           </p>
           <div className="hero-actions">
-            <Link href="/docs" className="primary-button">
-              Read the docs <ArrowRight size={17} />
+            <Link href="/studio" className="primary-button">
+              Try the playground <ArrowRight size={17} />
             </Link>
-            <a className="secondary-button" href="#geometry">
-              See how it works <CornerDownRight size={16} />
-            </a>
+            <Link href="/docs" className="secondary-button">Read the docs</Link>
           </div>
-          <p className="release-note">Public alpha · no npm release yet · run from source</p>
           <div className="hero-proof" aria-label="Livery highlights">
             <span><strong>01</strong> typed diagnostics</span>
             <span><strong>02</strong> deterministic output</span>

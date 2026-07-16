@@ -49,6 +49,17 @@ Labels are not prose. Use `Checkout API`, not `The checkout API receives and val
 
 Put explanation around the visual in your application. The visual should carry structure, not every sentence from the answer.
 
+## Use color with intent
+
+Ask for color by meaning or stable category, not as generic decoration:
+
+```text
+Make Stripe purple and Postgres blue. Use coordinated soft fills, borders,
+text, and icons. Keep the remaining services neutral.
+```
+
+This gives the model an explicit visual job. Prefer semantic tones for status and exact paint overrides for brands or categories. A useful default limit is one accent family plus semantic state colors.
+
 ## Prefer structure over coordinates
 
 Tell the model the intended flow:
@@ -106,4 +117,3 @@ Use a left-to-right layout and labels under three words.`,
 ```
 
 The result should be source you can compile immediately, not a conversation about source.
-
