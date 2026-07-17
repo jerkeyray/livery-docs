@@ -6,6 +6,7 @@ import { LiveryChatVisual } from '@jerkeyray/react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { STUDIO_CANVAS_WIDTH } from '@/lib/studio-agent';
 
 const initialSource = '';
 
@@ -13,7 +14,7 @@ const prompts = [
   {
     title: 'Production checkout',
     description: 'Services, payment, queue, workers, and data',
-    prompt: 'Design a production checkout architecture. Group it into Client, Commerce, Async processing, and Data. Show a customer browser calling a checkout API, the API authorizing payment with Stripe and writing an order to Postgres, then publishing to a queue consumed by a fulfillment worker. Represent the order event as the async connector label, not as a standalone node. Arrange Client, Commerce, and Async processing as one compact left-to-right row, with Data directly below Commerce. Keep frame sizes balanced, connector labels in the open gaps between frames, and use restrained color only for payment and success.',
+    prompt: 'Design a production checkout architecture. Group it into four sibling frames: Client contains Browser; Commerce contains Checkout API and Stripe; Async processing contains Queue and Fulfillment worker; Data contains Postgres. Do not nest these frames. Show Browser calling Checkout API, Checkout API authorizing Stripe and writing Postgres, Checkout API publishing an order event to Queue, and Queue dispatching Fulfillment worker. Use a native flow layout with the customer-to-worker path marked primary and payment and storage marked supporting. Keep labels concise and color restrained.',
   },
   {
     title: 'Research agent loop',
@@ -45,15 +46,19 @@ export function Studio() {
   const [acceptedSource, setAcceptedSource] = useState(initialSource);
   const [sourceOpen, setSourceOpen] = useState(false);
   const [themeName, setThemeName] = useState<BuiltInThemeName>('editorial');
+  const [generationError, setGenerationError] = useState('');
   const theme = getBuiltInTheme(themeName);
   const hasScene = acceptedSource.trim().length > 0;
   const appliedSources = useRef(new Set([initialSource]));
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const compilation = useMemo(() => source.trim() ? render(source, { theme, width: 760 }) : { diagnostics: [] }, [source, theme]);
+  const compilation = useMemo(() => source.trim() ? render(source, { theme, width: STUDIO_CANVAS_WIDTH }) : { diagnostics: [] }, [source, theme]);
   const diagnostics = compilation.diagnostics;
 
   const { error, messages, sendMessage, status, stop } = useChat({
     transport: new DefaultChatTransport({ api: '/api/chat' }),
+    onError: (nextError) => {
+      setGenerationError(nextError.message || 'Diagram generation failed before validation.');
+    },
     onFinish: ({ message }) => {
       for (const part of message.parts) {
         const output = getSubmissionOutput(part);
@@ -61,6 +66,7 @@ export function Studio() {
         appliedSources.current.add(output.source);
         setSource(output.source);
         setAcceptedSource(output.source);
+        setGenerationError('');
       }
     },
   });
@@ -72,7 +78,7 @@ export function Studio() {
 
   const updateSource = (nextSource: string) => {
     setSource(nextSource);
-    const nextCompilation = render(nextSource, { theme, width: 760 });
+    const nextCompilation = render(nextSource, { theme, width: STUDIO_CANVAS_WIDTH });
     if (nextCompilation.svg && !nextCompilation.diagnostics.some(({ severity }) => severity === 'error')) {
       setAcceptedSource(nextSource);
     }
@@ -82,12 +88,14 @@ export function Studio() {
     event.preventDefault();
     const text = input.trim();
     if (!text || busy) return;
+    setGenerationError('');
     setInput('');
     void sendMessage({ text }, { body: { currentSource: acceptedSource, theme: themeName } });
   };
 
   const runPrompt = (prompt: string) => {
     if (busy) return;
+    setGenerationError('');
     void sendMessage({ text: prompt }, { body: { currentSource: acceptedSource, theme: themeName } });
   };
 
@@ -120,7 +128,7 @@ export function Studio() {
             </div>
           ) : messages.map((message) => <ChatMessage key={message.id} message={message} />)}
           {busy && <div className="studio-agent-progress"><span /><span /><span /><em>Drafting and checking</em></div>}
-          {error && <div className="studio-chat-error" role="alert">{error.message || 'Generation failed. Check the API key and try again.'}</div>}
+          {(generationError || error) && <div className="studio-chat-error" role="alert">{generationError || error?.message || 'Generation failed. Check the API key and try again.'}</div>}
           <div ref={messagesEndRef} aria-hidden />
         </div>
 
@@ -160,7 +168,7 @@ export function Studio() {
               streaming={busy}
               theme={theme}
               timelineControls="auto"
-              width={760}
+              width={STUDIO_CANVAS_WIDTH}
             />
           ) : (
             <div className="studio-canvas-empty">
@@ -187,9 +195,14 @@ function ChatMessage({ message }: { message: UIMessage }) {
   const text = message.parts.filter((part) => part.type === 'text').map((part) => part.text).join('');
   const submissions = message.parts.map(getSubmissionOutput).filter((output): output is SubmissionOutput => Boolean(output));
   const accepted = submissions.findLast((output) => output.accepted);
-  const rejected = submissions.filter((output) => !output.accepted).length;
+  const lastRejected = submissions.findLast((output) => !output.accepted);
+  const rejectedSubmissions = submissions.filter((output) => !output.accepted);
+  const rejected = rejectedSubmissions.length;
   const [expanded, setExpanded] = useState(false);
-  const displayText = accepted?.summary ?? text;
+  const rejectionText = lastRejected?.diagnostics?.length
+    ? `Could not apply the diagram: ${lastRejected.diagnostics.map(({ message }) => message).join(' ')}`
+    : 'Could not produce a valid diagram within the repair limit.';
+  const displayText = accepted?.summary || text || (message.role === 'assistant' && lastRejected ? rejectionText : '');
   const collapsible = message.role === 'user' && displayText.length > 260;
 
   return (
@@ -210,7 +223,21 @@ function ChatMessage({ message }: { message: UIMessage }) {
           )}
         </div>
       )}
-      {rejected > 0 && <small>Repaired {rejected} validation {rejected === 1 ? 'issue' : 'issues'}</small>}
+      {rejected > 0 && (
+        <details className="studio-validation-log">
+          <summary>{rejected} rejected validation {rejected === 1 ? 'attempt' : 'attempts'}</summary>
+          <ol>
+            {rejectedSubmissions.map((submission, attempt) => (
+              <li key={attempt}>
+                <strong>Attempt {attempt + 1}</strong>
+                {(submission.diagnostics?.length ? submission.diagnostics : [{ code: 'generation.rejected', message: 'The revision was rejected without a diagnostic.' }]).map(({ code, message }, diagnostic) => (
+                  <span key={`${code}-${diagnostic}`}><code>{code}</code>{message}</span>
+                ))}
+              </li>
+            ))}
+          </ol>
+        </details>
+      )}
       {accepted && <small className="studio-accepted-revision"><i />Compiled and applied</small>}
     </article>
   );

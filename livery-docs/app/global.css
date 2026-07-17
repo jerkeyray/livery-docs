@@ -35,6 +35,12 @@ body {
 
 .docs-brand { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono), monospace; font-weight: 650; letter-spacing: -.04em; }
 .docs-brand img { width: 24px; height: 24px; }
+#nd-sidebar a:has(.docs-brand), #nd-sidebar a:has(.docs-brand):hover, #nd-sidebar a:has(.docs-brand)[data-active="true"] {
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+  color: var(--docs-text);
+}
 
 /* Docs — high-contrast application chrome with a calm reading canvas. */
 #nd-docs-layout {

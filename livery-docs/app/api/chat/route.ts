@@ -1,15 +1,16 @@
 import { openai } from '@ai-sdk/openai';
-import { builtInThemes, createAgentGuide, createRepairPrompt, getBuiltInTheme, render, type BuiltInThemeName } from '@jerkeyray/core';
+import { builtInThemes, compileVisual, createAgentGuide, createRepairPrompt, getBuiltInTheme, render, type BuiltInThemeName } from '@jerkeyray/core';
 import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage } from 'ai';
 import { z } from 'zod';
 import {
   createRequirementRepairPrompt,
+  STUDIO_CANVAS_WIDTH,
   shouldUseDraftModel,
   validateRequirementPlan,
   validateSemanticRequirements,
 } from '@/lib/studio-agent';
 
-export const maxDuration = 30;
+export const maxDuration = 120;
 
 const MAX_SOURCE_LENGTH = 30_000;
 const MAX_REQUEST_BYTES = 96_000;
@@ -21,12 +22,19 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 const editModel = process.env.LIVERY_STUDIO_MODEL ?? 'gpt-5.4-nano';
 const draftModel = process.env.LIVERY_STUDIO_DRAFT_MODEL ?? 'gpt-5.4-mini';
 const fallbackModel = process.env.LIVERY_STUDIO_FALLBACK_MODEL ?? 'gpt-5.4-mini';
+const compilerCompatibilityError = getCompilerCompatibilityError();
 
 const submitLiveryInput = z.object({
   intent: z.enum(['replace', 'refine']).describe('Replace for a fundamentally different diagram; refine for a local edit to the current diagram.'),
   requirements: z.object({
     nodes: z.array(z.string().min(1).max(60)).min(1).max(18).describe('Every explicitly requested node label that must appear.'),
     groups: z.array(z.string().min(1).max(60)).max(8).describe('Every explicitly requested frame or subsystem label that must appear.'),
+    groupMemberships: z.array(z.object({
+      group: z.string().min(1).max(60),
+      members: z.array(z.string().min(1).max(60)).min(1).max(12),
+    })).max(8).describe('Which required nodes belong inside each requested group.'),
+    peerGroups: z.boolean().describe('True when requested groups are sibling areas rather than nested boundaries.'),
+    groupColumns: z.number().int().min(1).max(4).nullable().describe('Explicit requested column count for the peer-group layout, or null when unspecified.'),
     relationships: z.array(z.object({
       from: z.string().min(1).max(60),
       to: z.string().min(1).max(60),
@@ -37,6 +45,11 @@ const submitLiveryInput = z.object({
 });
 
 export async function POST(request: Request) {
+  if (compilerCompatibilityError) {
+    console.error('[studio] incompatible compiler:', compilerCompatibilityError);
+    return new Response(compilerCompatibilityError, { status: 503 });
+  }
+
   if (!process.env.OPENAI_API_KEY) {
     return new Response('Set OPENAI_API_KEY in .env.local to generate diagrams.', { status: 503 });
   }
@@ -91,10 +104,13 @@ export async function POST(request: Request) {
   const result = streamText({
     model: openai(initialModel),
     maxRetries: 0,
-    timeout: { totalMs: 27_000, stepMs: 20_000, chunkMs: 15_000 },
+    // A complete draft can require a compiler-repair step. The previous 27s
+    // total cutoff routinely aborted healthy model calls before submit_livery
+    // returned, leaving the client with a successful HTTP stream but no scene.
+    timeout: { totalMs: 110_000, stepMs: 40_000, chunkMs: 30_000 },
     system: createStudioInstructions(currentSource, themeName),
     messages: await convertToModelMessages(messages),
-    stopWhen: stepCountIs(4),
+    stopWhen: stepCountIs(6),
     prepareStep: ({ stepNumber }) => stepNumber >= 2 ? { model: openai(fallbackModel) } : undefined,
     providerOptions: {
       openai: {
@@ -103,7 +119,9 @@ export async function POST(request: Request) {
         textVerbosity: 'low',
       },
     },
-    onError: () => {},
+    onError: ({ error }) => {
+      console.error('[studio] generation failed:', collectErrorMessages(error).join(' | '));
+    },
     tools: {
       submit_livery: tool({
         description: 'Validate the request checklist, compile a complete Livery revision, and verify that the compiled diagram contains the required nodes, groups, and directed relationships. Use this for every diagram change.',
@@ -111,6 +129,7 @@ export async function POST(request: Request) {
         execute: async ({ intent, requirements, source, summary }) => {
           const requirementIssues = validateRequirementPlan(requirements, latestUserRequest);
           if (requirementIssues.length > 0) {
+            logStudioRejection('requirements', requirementIssues);
             return {
               accepted: false as const,
               errorCount: requirementIssues.length,
@@ -119,10 +138,11 @@ export async function POST(request: Request) {
             };
           }
 
-          const result = render(source, { theme, width: 760 });
+          const result = render(source, { theme, width: STUDIO_CANVAS_WIDTH });
           const errors = result.diagnostics.filter(({ severity }) => severity === 'error');
 
           if (!result.svg || errors.length > 0) {
+            logStudioRejection('compiler', errors);
             return {
               accepted: false as const,
               errorCount: errors.length,
@@ -131,8 +151,9 @@ export async function POST(request: Request) {
             };
           }
 
-          const semanticIssues = result.document ? validateSemanticRequirements(result.document, requirements) : [];
+          const semanticIssues = result.document ? validateSemanticRequirements(result.document, requirements, latestUserRequest) : [];
           if (semanticIssues.length > 0) {
+            logStudioRejection('semantics', semanticIssues);
             return {
               accepted: false as const,
               errorCount: semanticIssues.length,
@@ -161,6 +182,19 @@ export async function POST(request: Request) {
   return result.toUIMessageStreamResponse({ onError: studioErrorMessage });
 }
 
+function getCompilerCompatibilityError() {
+  const probe = compileVisual(`figure studio_flow_probe {
+    client = service("Client")
+    api = service("API")
+    request = connect(client.right, api.left, role: primary)
+    flow(client, api, direction: auto, gap: lg, rankGap: xl)
+  }`);
+  const errors = probe.diagnostics.filter(({ severity }) => severity === 'error');
+  if (errors.length === 0 && probe.document?.root.layout?.kind === 'flow') return null;
+  const details = errors.map(({ code, message }) => `[${code}] ${message}`).join(' | ');
+  return `Studio loaded an incompatible Livery compiler without flow layout support. Restart the docs dev server.${details ? ` ${details}` : ''}`;
+}
+
 function createStudioInstructions(currentSource: string, theme: BuiltInThemeName) {
   return [
     'You are the Livery Studio diagram agent.',
@@ -168,14 +202,15 @@ function createStudioInstructions(currentSource: string, theme: BuiltInThemeName
     'For follow-up requests, modify the current source and preserve unrelated structure and labels.',
     'Classify the request before writing source. Use intent replace when the user asks for a fundamentally different system or says to start over. Use intent refine for additions, removals, renames, styling, or rearrangement of the current diagram.',
     'For replace, rebuild the figure around the new request; do not retain unrelated nodes merely because they exist in the current source.',
-    'In submit_livery, list every explicitly requested node, group, and directed relationship in requirements. This is an acceptance contract: never omit or weaken a requirement to make validation pass.',
+    'In submit_livery, list every explicitly requested node, group, group membership, and directed relationship in requirements. Mark peerGroups true when the user divides one system into named areas. Set groupColumns only when the user explicitly asks for an N-column grid; otherwise it must be null. This is an acceptance contract: never omit, invent, or weaken a requirement to make validation pass.',
     'For long detailed requests, include at least five required nodes and three required relationships. If grouping is requested, name every requested group.',
     'Every requested diagram change must be submitted through submit_livery.',
     'If compilation or semantic validation fails, use the returned diagnostics and repairPrompt, then submit a corrected complete source with the same faithful requirements.',
     'Never put Livery source in normal chat text. After acceptance, respond with one concise sentence describing the result.',
     'Compose for reading order, not merely for geometric validity. The main flow should move left-to-right or top-to-bottom without backtracking.',
-    'For staged systems, prefer a column of short rows. Keep side effects such as storage and payment close to the service that invokes them.',
-    'Never place sequential stages in a 2×2 frame grid. Stack stages vertically or use one continuous row so the primary flow never snakes backward.',
+    'For connected architectures and workflows, use flow(..., direction: auto) so the native solver owns ranking, responsive reflow, and routing. Mark the main reading spine with role: primary, meaningful branches secondary, and side effects supporting.',
+    'Use grid, row, or column only when the user explicitly requests exact composition. Never force sequential stages into a 2×2 grid.',
+    'Keep side effects such as storage and payment close to the service that invokes them; the topology should determine their placement.',
     'Never stack more than four nodes in one frame. Split long pipelines into compact stage frames or short rows, and keep decision branches visible in the first canvas view.',
     'Keep connector labels in open routing gaps. Never place a connector label on a frame border, frame heading, or component surface.',
     'Do not turn events, actions, or relationship labels into standalone nodes unless the user explicitly asks for them as system entities.',
@@ -232,6 +267,10 @@ function collectErrorMessages(error: unknown, depth = 0): string[] {
     ...collectErrorMessages(nested.lastError, depth + 1),
     ...(nested.errors?.flatMap((item) => collectErrorMessages(item, depth + 1)) ?? []),
   ];
+}
+
+function logStudioRejection(stage: string, diagnostics: Array<{ code: string; message: string }>) {
+  console.warn(`[studio] ${stage} rejected:`, diagnostics.slice(0, 8).map(({ code, message }) => `[${code}] ${message}`).join(' | '));
 }
 
 type RateLimitEntry = { count: number; resetAt: number };

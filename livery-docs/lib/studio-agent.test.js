@@ -29,7 +29,7 @@ describe('Studio generation contract', () => {
 
   test('requires a sufficiently complete plan for detailed grouped prompts', () => {
     const prompt = `Create a system architecture ${'with detailed services and data movement '.repeat(8)}grouped into four areas.`;
-    const issues = validateRequirementPlan({ nodes: ['API'], groups: [], relationships: [] }, prompt);
+    const issues = validateRequirementPlan({ nodes: ['API'], groups: [], groupMemberships: [], peerGroups: false, groupColumns: null, relationships: [] }, prompt);
     expect(issues.map(({ code }) => code)).toEqual([
       'requirements.nodes_incomplete',
       'requirements.relationships_incomplete',
@@ -41,6 +41,9 @@ describe('Studio generation contract', () => {
     const issues = validateRequirementPlan({
       nodes: ['API gateway'],
       groups: [],
+      groupMemberships: [],
+      peerGroups: false,
+      groupColumns: null,
       relationships: [{ from: 'Browser', to: 'API gateway' }],
     }, 'Show a browser calling an API gateway.');
     expect(issues).toEqual([{
@@ -55,12 +58,18 @@ describe('Studio generation contract', () => {
     expect(validateSemanticRequirements(result.document, {
       nodes: ['Web app', 'API gateway', 'Order service'],
       groups: ['Client', 'Application'],
+      groupMemberships: [],
+      peerGroups: true,
+      groupColumns: null,
       relationships: [{ from: 'Web app', to: 'API gateway' }, { from: 'API gateway', to: 'Order service' }],
     })).toEqual([]);
 
     const issues = validateSemanticRequirements(result.document, {
       nodes: ['Vector database'],
       groups: ['AI processing'],
+      groupMemberships: [],
+      peerGroups: false,
+      groupColumns: null,
       relationships: [{ from: 'Order service', to: 'Web app' }],
     });
     expect(issues.map(({ code }) => code)).toEqual([
@@ -76,8 +85,28 @@ describe('Studio generation contract', () => {
     const issues = validateSemanticRequirements(result.document, {
       nodes: [],
       groups: [],
+      groupMemberships: [],
+      peerGroups: false,
+      groupColumns: null,
       relationships: [{ from: 'Missing browser', to: 'API gateway' }],
     });
     expect(issues.map(({ code }) => code)).toEqual(['semantic.missing_required_relationship']);
+  });
+
+  test('rejects invented grid columns and preserves an explicitly requested flow layout', () => {
+    const requirements = {
+      nodes: ['Web app', 'API gateway', 'Order service'],
+      groups: ['Client', 'Application'],
+      groupMemberships: [],
+      peerGroups: true,
+      groupColumns: 2,
+      relationships: [{ from: 'Web app', to: 'API gateway' }],
+    };
+    expect(validateRequirementPlan(requirements, 'Use flow(..., direction: auto) for the outer composition.').map(({ code }) => code))
+      .toContain('requirements.group_columns_invented');
+
+    const result = compileProgram(source);
+    expect(validateSemanticRequirements(result.document, { ...requirements, groupColumns: null }, 'Use flow(..., direction: auto) for the outer composition.').map(({ code }) => code))
+      .toContain('semantic.required_flow_layout_missing');
   });
 });

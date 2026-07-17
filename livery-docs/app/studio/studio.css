@@ -74,6 +74,13 @@
 .studio-message-toggle:hover { border-color: rgb(255 255 255 / 32%); background: rgb(255 255 255 / 16%); }
 .studio-message-toggle:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .studio-message small { display: flex; align-items: center; gap: 7px; margin-top: 7px; color: var(--studio-muted); font-size: 11px; }
+.studio-validation-log { margin-top: 7px; color: var(--studio-muted); font-size: 11px; }
+.studio-validation-log summary { width: fit-content; cursor: pointer; user-select: none; }
+.studio-validation-log ol { display: grid; gap: 8px; margin: 8px 0 0; padding: 10px 12px 10px 28px; border: 1px solid var(--studio-line); border-radius: 8px; background: #faf9f7; }
+.studio-validation-log li { padding-left: 2px; }
+.studio-validation-log li > strong { display: block; margin-bottom: 3px; color: var(--studio-ink); font-size: 10px; }
+.studio-validation-log li > span { display: block; line-height: 1.45; }
+.studio-validation-log code { margin-right: 5px; color: var(--studio-accent-dark); font: 600 9px/1.4 var(--studio-mono); }
 .studio-accepted-revision i, .studio-diagnostic-ready i { width: 6px; height: 6px; border-radius: 50%; background: #3f9265; }
 .studio-agent-progress { display: flex; align-items: center; gap: 4px; color: var(--studio-muted); }
 .studio-agent-progress span { width: 5px; height: 5px; border-radius: 50%; background: var(--studio-accent); animation: studio-pulse 1s infinite alternate; }

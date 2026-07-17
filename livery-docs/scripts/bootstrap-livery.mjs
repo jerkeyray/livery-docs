@@ -1,7 +1,7 @@
 import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const projectRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const vendorRoot = path.join(projectRoot, '.vendor');
@@ -37,4 +37,28 @@ for (const name of ['core', 'web', 'react']) {
     rmSync(installedTarget, { recursive: true, force: true });
     cpSync(packageTarget, installedTarget, { recursive: true });
   }
+}
+
+// These local packages are copied in place instead of receiving a new package
+// version. Next can otherwise retain an older compiler in its generated server
+// and vendor chunks even after bootstrap replaced node_modules successfully.
+// Clearing only `.next/cache` is insufficient because `.next/dev/server` also
+// contains compiled vendor code.
+rmSync(path.join(projectRoot, '.next'), { recursive: true, force: true });
+
+// Keep the Studio prompt and the compiler capability in lockstep. If a package
+// copy or build ever regresses, fail during startup instead of spending an LLM
+// request repairing syntax that the running compiler cannot understand.
+const coreEntry = path.join(projectRoot, 'node_modules', '@jerkeyray', 'core', 'dist', 'index.mjs');
+const { compileVisual } = await import(`${pathToFileURL(coreEntry).href}?bootstrap=${Date.now()}`);
+const flowProbe = compileVisual(`figure bootstrap_flow {
+  client = service("Client")
+  api = service("API")
+  request = connect(client.right, api.left, role: primary)
+  flow(client, api, direction: auto, gap: lg, rankGap: xl)
+}`);
+const flowErrors = flowProbe.diagnostics.filter(({ severity }) => severity === 'error');
+if (flowErrors.length > 0 || flowProbe.document?.root.layout?.kind !== 'flow') {
+  const details = flowErrors.map(({ code, message }) => `[${code}] ${message}`).join(' | ');
+  throw new Error(`Bootstrapped Livery compiler does not support flow layout${details ? `: ${details}` : '.'}`);
 }
