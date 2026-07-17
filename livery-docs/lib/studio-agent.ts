@@ -140,7 +140,7 @@ export function validateSemanticRequirements(document: VisualDocument, requireme
     }
   }
 
-  if (/\brestrained colou?r\b|\bcolou?r only for\b/i.test(prompt)) {
+  if (/\brestrained colou?r\b|\bcolou?r restrained\b|\bcolou?r only for\b/i.test(prompt)) {
     const colored = nodes.filter((node) => node.kind !== 'frame' && node.id !== document.root.id && (
       node.tone && node.tone !== 'neutral'
       || node.variant === 'solid'

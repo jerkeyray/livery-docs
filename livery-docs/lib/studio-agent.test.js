@@ -109,4 +109,23 @@ describe('Studio generation contract', () => {
     expect(validateSemanticRequirements(result.document, { ...requirements, groupColumns: null }, 'Use flow(..., direction: auto) for the outer composition.').map(({ code }) => code))
       .toContain('semantic.required_flow_layout_missing');
   });
+
+  test('enforces restrained color regardless of phrase order', () => {
+    const result = compileProgram(`figure colored {
+      a = service("A", tone: info)
+      b = service("B", tone: success)
+      c = service("C", tone: warning)
+      row(a, b, c)
+    }`);
+    const requirements = {
+      nodes: ['A', 'B', 'C'],
+      groups: [],
+      groupMemberships: [],
+      peerGroups: false,
+      groupColumns: null,
+      relationships: [],
+    };
+    expect(validateSemanticRequirements(result.document, requirements, 'Keep color restrained.').map(({ code }) => code))
+      .toContain('semantic.excessive_color');
+  });
 });

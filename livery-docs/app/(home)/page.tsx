@@ -27,6 +27,7 @@ export default function HomePage() {
           <span>livery</span>
         </Link>
         <div className="landing-nav-links">
+          <Link href="/studio" className="is-primary">Studio</Link>
           <Link href="/docs">Docs</Link>
         </div>
         <div className="landing-nav-actions">
@@ -57,7 +58,7 @@ export default function HomePage() {
           </p>
           <div className="hero-actions">
             <Link href="/studio" className="primary-button">
-              Try the playground <ArrowRight size={17} />
+              Open Studio <ArrowRight size={17} />
             </Link>
             <Link href="/docs" className="secondary-button">Read the docs</Link>
           </div>
@@ -127,8 +128,8 @@ export default function HomePage() {
           <span className="section-index"><Sparkles size={12} /> Start with a scene</span>
           <h2>Give your agent<br />a visual vocabulary.</h2>
           <p>Readable source in. Reliable geometry out.</p>
-          <Link href="/docs/getting-started" className="primary-button">
-            Build your first figure <ArrowRight size={17} />
+          <Link href="/studio" className="primary-button">
+            Try it in Studio <ArrowRight size={17} />
           </Link>
         </div>
       </section>

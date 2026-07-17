@@ -93,7 +93,7 @@ export async function POST(request: Request) {
   const currentSource = typeof body.currentSource === 'string'
     ? body.currentSource.slice(0, MAX_SOURCE_LENGTH)
     : '';
-  const themeName: BuiltInThemeName = typeof body.theme === 'string' && body.theme in builtInThemes
+  const themeName: BuiltInThemeName = typeof body.theme === 'string' && Object.hasOwn(builtInThemes, body.theme)
     ? body.theme as BuiltInThemeName
     : 'editorial';
   const theme = getBuiltInTheme(themeName);
@@ -212,6 +212,7 @@ function createStudioInstructions(currentSource: string, theme: BuiltInThemeName
     'Use grid, row, or column only when the user explicitly requests exact composition. Never force sequential stages into a 2×2 grid.',
     'Keep side effects such as storage and payment close to the service that invokes them; the topology should determine their placement.',
     'Never stack more than four nodes in one frame. Split long pipelines into compact stage frames or short rows, and keep decision branches visible in the first canvas view.',
+    'When top-level stage frames are stacked vertically, keep each frame shallow: arrange two or three members in a short row unless the user explicitly requires those members themselves to be vertical. Do not interpret vertical frame order as a request for columns inside every frame.',
     'Keep connector labels in open routing gaps. Never place a connector label on a frame border, frame heading, or component surface.',
     'Do not turn events, actions, or relationship labels into standalone nodes unless the user explicitly asks for them as system entities.',
     'Use connector variants such as async or data to express semantics instead of adding parenthetical “sync” or “async” text to labels.',

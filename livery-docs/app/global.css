@@ -192,6 +192,8 @@ body {
 .landing-nav-links { display: flex; align-items: center; gap: 8px; padding: 5px; border: 1px solid #d1cdc2; border-radius: 999px; background: rgb(255 255 255 / 48%); }
 .landing-nav-links a { padding: 7px 14px; border-radius: 999px; color: #63615d; font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: .045em; text-decoration: none; text-transform: uppercase; }
 .landing-nav-links a:hover { background: #fff; color: var(--ink); }
+.landing-nav-links a.is-primary { background: var(--ink); color: #fff; }
+.landing-nav-links a.is-primary:hover { background: var(--livery); color: #fff; }
 .landing-nav-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
 .repo-link { display: inline-flex; height: 40px; align-items: center; gap: 7px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; background: #fdfcf8; color: var(--ink); font-size: 12px; font-weight: 600; text-decoration: none; transition: 150ms ease; }
 .repo-link:hover { border-color: #b8b8b3; background: #fff; }
