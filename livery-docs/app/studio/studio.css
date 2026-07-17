@@ -61,9 +61,9 @@
 .studio-brand { display: flex; align-items: center; gap: 9px; color: inherit; text-decoration: none; }
 .studio-brand strong { font-size: 17px; letter-spacing: -.025em; }
 .studio-brand > span:last-child { padding-left: 9px; border-left: 1px solid var(--studio-line); color: var(--studio-muted); font-size: 13px; }
-.studio-header-nav { display: flex; align-items: center; gap: 6px; }
-.studio-header-nav a { padding: 8px 10px; border-radius: 6px; color: var(--studio-muted); font-size: 11px; font-weight: 650; text-decoration: none; }
-.studio-header-nav a:hover { background: var(--studio-paper); color: var(--studio-ink); }
+.studio-header-nav { display: flex; align-items: center; gap: 4px; }
+.studio-header-nav a { display: inline-flex; height: 34px; align-items: center; padding: 0 10px; border-radius: 7px; color: var(--studio-muted); font-size: 11px; font-weight: 650; text-decoration: none; transition: background .15s ease, color .15s ease; }
+.studio-header-nav a:hover { background: var(--studio-card); color: var(--studio-ink); }
 .studio-brand-mark { width: 22px; height: 22px; display: grid; grid-template: 1fr 1fr / 1fr 1fr; gap: 2px; }
 .studio-brand-mark i { display: block; background: var(--studio-accent); border-radius: 2px; }
 .studio-brand-mark i:nth-child(2) { border-radius: 2px 6px 2px 2px; }
@@ -139,6 +139,10 @@
 .studio-canvas-toolbar strong { font-size: 12px; }
 .studio-canvas-toolbar button { height: 36px; padding: 0 13px; border: 1px solid var(--canvas-control-border); border-radius: 8px; background: var(--canvas-control); color: var(--canvas-text); font-size: 11px; font-weight: 650; cursor: pointer; transition: border-color .15s, background .15s, color .15s; }
 .studio-canvas-toolbar button:hover { background: var(--canvas-control-hover); }
+.studio-canvas-toolbar .studio-new-button { display: inline-flex; min-width: 72px; align-items: center; justify-content: center; gap: 7px; border-color: var(--canvas-control-border); background: var(--canvas-control); color: var(--canvas-muted); }
+.studio-canvas-toolbar .studio-new-button b { font-size: 16px; font-weight: 400; line-height: 1; transform: translateY(-1px); }
+.studio-canvas-toolbar .studio-new-button:hover { background: var(--canvas-control-hover); color: var(--canvas-text); }
+.studio-canvas-toolbar .studio-new-button:disabled { opacity: .4; cursor: default; }
 .studio-canvas-toolbar .studio-canvas-actions { margin-left: auto; align-items: center; gap: 8px; }
 .studio-export-notice { min-width: 0; overflow: hidden; color: var(--canvas-muted); font-size: 10px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .studio-theme-picker, .studio-export-picker { position: relative; }
@@ -166,8 +170,8 @@
 .studio-canvas-empty p { margin: 7px 0 0; font-size: 12px; }
 .studio-visual-fallback { padding: 30px; border: 1px solid var(--studio-line); background: var(--studio-card); color: var(--studio-muted); text-align: center; }
 
-.studio-site-theme-toggle { width: 34px; height: 34px; border-color: var(--studio-line); background: var(--studio-card); color: var(--studio-muted); }
-.studio-site-theme-toggle:hover { border-color: color-mix(in srgb, var(--studio-muted) 65%, var(--studio-line)); color: var(--studio-ink); }
+.studio-site-theme-toggle { width: 34px; height: 34px; margin-left: 5px; border: 1px solid var(--studio-line); border-radius: 8px; background: var(--studio-card-soft); color: var(--studio-muted); }
+.studio-site-theme-toggle:hover { border-color: var(--studio-line); background: var(--studio-card); color: var(--studio-ink); }
 
 .studio-source-panel { position: fixed; z-index: 100; top: 68px; right: 0; bottom: 0; width: min(560px, 46vw); display: grid; grid-template-rows: 62px minmax(0, 1fr) auto; border-left: 1px solid #34343a; background: #17181d; color: #e8e8ea; box-shadow: -24px 0 70px rgb(0 0 0 / 18%); }
 .studio-source-heading { display: flex; justify-content: space-between; align-items: center; padding: 0 18px; border-bottom: 1px solid #303137; }
@@ -200,4 +204,6 @@
   .studio-canvas-toolbar .studio-theme-trigger { min-width: 100px; }
   .studio-canvas-toolbar .studio-export-trigger { min-width: 70px; }
   .studio-canvas-toolbar button { padding-inline: 9px; }
+  .studio-canvas-toolbar .studio-new-button { width: 36px; min-width: 36px; padding: 0; }
+  .studio-canvas-toolbar .studio-new-button span { display: none; }
 }

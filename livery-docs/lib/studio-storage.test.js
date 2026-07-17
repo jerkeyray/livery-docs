@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { readStudioDraft, STUDIO_DRAFT_STORAGE_KEY, writeStudioDraft } from './studio-storage';
+import { clearStudioDraft, readStudioDraft, STUDIO_DRAFT_STORAGE_KEY, writeStudioDraft } from './studio-storage';
 
 const draft = {
   version: 1,
@@ -25,5 +25,11 @@ describe('Studio draft storage', () => {
 
   test('uses a versioned browser key', () => {
     expect(STUDIO_DRAFT_STORAGE_KEY).toBe('livery.studio.draft.v1');
+  });
+
+  test('clears the persisted working session', () => {
+    let removed;
+    clearStudioDraft({ removeItem: (key) => { removed = key; } });
+    expect(removed).toBe(STUDIO_DRAFT_STORAGE_KEY);
   });
 });

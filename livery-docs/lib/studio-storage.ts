@@ -40,6 +40,14 @@ export function writeStudioDraft(storage: Pick<Storage, 'setItem'>, draft: Studi
   }
 }
 
+export function clearStudioDraft(storage: Pick<Storage, 'removeItem'>): void {
+  try {
+    storage.removeItem(STUDIO_DRAFT_STORAGE_KEY);
+  } catch {
+    // Clearing a session should still reset the in-memory Studio when storage is unavailable.
+  }
+}
+
 function isUIMessage(value: unknown): value is UIMessage {
   if (!value || typeof value !== 'object') return false;
   const message = value as Partial<UIMessage>;

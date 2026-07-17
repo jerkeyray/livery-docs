@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { SiteThemeToggle } from '@/components/site-theme-toggle';
 import { STUDIO_CANVAS_WIDTH } from '@/lib/studio-agent';
-import { readStudioDraft, writeStudioDraft } from '@/lib/studio-storage';
+import { clearStudioDraft, readStudioDraft, writeStudioDraft } from '@/lib/studio-storage';
 
 const initialSource = '';
 
@@ -68,7 +68,7 @@ export function Studio() {
   const compilation = useMemo(() => source.trim() ? render(source, { theme, width: STUDIO_CANVAS_WIDTH }) : { diagnostics: [] }, [source, theme]);
   const diagnostics = compilation.diagnostics;
 
-  const { error, messages, sendMessage, setMessages, status, stop } = useChat({
+  const { clearError, error, messages, sendMessage, setMessages, status, stop } = useChat({
     transport: new DefaultChatTransport({ api: '/api/chat' }),
     onError: (nextError) => {
       setGenerationError(nextError.message || 'Diagram generation failed before validation.');
@@ -144,6 +144,20 @@ export function Studio() {
     if (busy) return;
     setGenerationError('');
     void sendMessage({ text: prompt }, { body: { currentSource: acceptedSource, theme: themeName } });
+  };
+
+  const startNewDiagram = () => {
+    if (busy) return;
+    clearStudioDraft(window.localStorage);
+    appliedSources.current = new Set([initialSource]);
+    setMessages([]);
+    setSource(initialSource);
+    setAcceptedSource(initialSource);
+    setInput('');
+    setSourceOpen(false);
+    setGenerationError('');
+    setExportNotice('');
+    clearError();
   };
 
   const exportDiagram = async (format: 'copy' | 'png' | 'svg') => {
@@ -226,6 +240,9 @@ export function Studio() {
         <div className="studio-canvas-toolbar">
           <span aria-live="polite" className="studio-export-notice">{exportNotice}</span>
           <div className="studio-canvas-actions">
+            {(hasScene || messages.length > 0 || input.length > 0) && (
+              <button className="studio-new-button" disabled={busy} onClick={startNewDiagram} type="button"><b aria-hidden>+</b><span>New</span></button>
+            )}
             <ThemePicker onChange={setThemeName} value={themeName} />
             {hasScene && <ExportMenu onExport={exportDiagram} />}
             <button aria-expanded={sourceOpen} onClick={() => setSourceOpen((value) => !value)} type="button">{sourceOpen ? 'Hide source' : 'View source'}</button>
