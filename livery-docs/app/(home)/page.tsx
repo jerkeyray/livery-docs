@@ -7,6 +7,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { HeroDemo } from '@/components/hero-demo';
+import { SiteThemeToggle } from '@/components/site-theme-toggle';
 
 const outputs = ['React', 'Browser', 'SVG', 'PNG', 'JSON', 'CLI'];
 
@@ -31,6 +32,7 @@ export default function HomePage() {
           <Link href="/docs">Docs</Link>
         </div>
         <div className="landing-nav-actions">
+          <SiteThemeToggle />
           <a
             className="repo-link"
             href="https://github.com/jerkeyray/livery"

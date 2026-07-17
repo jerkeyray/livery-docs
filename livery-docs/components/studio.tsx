@@ -6,6 +6,7 @@ import { LiveryChatVisual } from '@jerkeyray/react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { SiteThemeToggle } from '@/components/site-theme-toggle';
 import { STUDIO_CANVAS_WIDTH } from '@/lib/studio-agent';
 import { readStudioDraft, writeStudioDraft } from '@/lib/studio-storage';
 
@@ -182,6 +183,7 @@ export function Studio() {
         <nav className="studio-header-nav" aria-label="Studio navigation">
           <Link href="/docs">Docs</Link>
           <a href="https://github.com/jerkeyray/livery" rel="noreferrer" target="_blank">GitHub</a>
+          <SiteThemeToggle className="studio-site-theme-toggle" />
         </nav>
       </header>
 
