@@ -1,0 +1,28 @@
+---
+title: Layout, routing, and validation
+description: Solve deterministic candidates and reject geometry that cannot satisfy the board contract.
+---
+
+The pinboard takes a `VisualDocument`, target width, theme-aware measurement, resource options, and bounded candidate settings.
+
+## Candidate solving
+
+Primitive layouts produce direct candidates. Flow, hierarchy, and interaction layouts derive placement from semantic relationships. Frames solve bounded internal composition before participating in their parent layout. Narrow widths may select a different direction or spacing candidate.
+
+## Connector routing
+
+Routes begin and end at authored anchors. The router reserves channels, respects hierarchy and grouping, and avoids treating labels as free-floating decoration. Connector semantic roles help distinguish the primary reading path from supporting or advisory relationships.
+
+## Geometry gate
+
+Candidates are checked for:
+
+- board and nested bounds;
+- unintended element and label collisions;
+- invalid connector paths or endpoints;
+- text fit and minimum geometry;
+- canvas containment and resource validity.
+
+Rejected candidates appear in `attempts`; the accepted candidate produces a `ValidationReport`. If none pass, `render` returns diagnostics without SVG.
+
+Measurement is injectable for controlled headless environments, but application code should normally use the canonical solver defaults so browser and export behavior stay aligned.

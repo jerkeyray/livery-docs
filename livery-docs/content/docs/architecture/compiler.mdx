@@ -1,0 +1,26 @@
+---
+title: Compiler pipeline
+description: Turn bounded source into a validated semantic document with stable identities.
+---
+
+## 1. Tokenize and parse
+
+The tokenizer and visual parser recognize declarations, calls, values, layouts, connectors, constraints, and timeline blocks. Syntax diagnostics carry source spans whenever possible.
+
+## 2. Validate contracts
+
+Every call is checked against the language contract: context, positional and named parameters, types, enumerated values, and status. The same contract powers `getLanguageCatalog()` and agent guides, preventing documentation and prompts from inventing a second grammar.
+
+## 3. Expand components
+
+Standard-library and authored components expand into public visual primitives. Expansion is bounded by nesting depth and total nodes. Returned children receive qualified IDs so connectors and timeline targets remain stable.
+
+## 4. Validate semantics
+
+The compiler rejects duplicate bindings, multiple figures, unplaced top-level nodes, unknown layout children, missing connector targets, invalid constraints, duplicate timeline states, and unsupported diagram metadata.
+
+## 5. Emit `VisualDocument`
+
+Only an error-free semantic program becomes a document. Warnings can accompany it. The document has no solved board coordinates; it records meaning, composition, and presentation state.
+
+The public entry point is `compileProgram(source)`. Direct parser and tokenizer exports are tooling surfaces, not alternate ways to bypass semantic validation.

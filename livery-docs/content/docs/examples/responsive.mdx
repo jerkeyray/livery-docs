@@ -1,0 +1,31 @@
+---
+title: Responsive composition
+description: Design one source for chat, content, and expanded presentation widths.
+---
+
+```livery
+figure pipeline("Document pipeline") {
+  upload = document("Upload")
+  parse = service("Parser")
+  index = database("Index")
+  search = api("Search API")
+
+  parse_file = upload.right -> parse.left("parse")
+  store = parse.right -> index.left("index")
+  query = index.right -> search.left("query")
+
+  flow(upload, parse, index, search, direction: auto, gap: lg, rankGap: xl)
+}
+```
+
+Render the same program at representative widths:
+
+```ts
+const widths = { chat: 360, content: 720, expanded: 1200 };
+for (const [name, width] of Object.entries(widths)) {
+  const result = exportVisual(source, { format: "svg", width });
+  if (!result.output) throw new Error(`${name} layout failed`);
+}
+```
+
+`direction: auto` lets the flow solver select an appropriate reading direction. If the narrow solve still fails, shorten labels or split the explanation rather than shrinking the SVG.

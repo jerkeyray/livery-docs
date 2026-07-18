@@ -1,0 +1,30 @@
+---
+title: Bounded canvas
+description: Draw local geometry without introducing board-level coordinates.
+---
+
+```livery
+component LatencyChart() {
+  x_axis = line(x: 36, y: 176, width: 344, stroke: "#64748b")
+  y_axis = line(x: 36, y: 24, height: 152, stroke: "#64748b")
+  curve = path(d: "M36 160 C90 148 120 126 164 90 S260 42 380 30", fill: "none", stroke: "#2563eb", strokeWidth: 3)
+  threshold = line(x: 36, y: 80, width: 344, stroke: "#dc2626", strokeWidth: 2)
+  label = text("threshold", x: 286, y: 62, color: "#991b1b", fontSize: 13)
+  return canvas(width: 420, height: 220) {
+    x_axis
+    y_axis
+    curve
+    threshold
+    label
+  }
+}
+
+figure latency("Latency envelope") {
+  chart = LatencyChart()
+  row(chart)
+}
+```
+
+Coordinates remain inside the `420 × 220` local surface. The top-level pinboard sees one bounded chart and can compose it alongside other elements.
+
+Use concise path data. Canvas path, image, repeat, and expansion limits still apply.

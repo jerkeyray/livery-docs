@@ -1,0 +1,27 @@
+---
+title: Styling
+description: Apply themes, variants, semantic tones, and intentional component overrides.
+---
+
+Start with structure, then use the smallest styling layer that expresses meaning.
+
+```livery
+figure styled {
+  neutral = service("API")
+  healthy = database("Primary", tone: success, variant: soft)
+  warning = queue("Backlog", tone: warning, fill: "#fff7ed", stroke: "#ea580c")
+  row(neutral, healthy, warning, gap: lg)
+}
+```
+
+Style precedence is deterministic:
+
+```text
+theme → variant → semantic tone → component override → timeline state
+```
+
+Use `default`, `muted`, `emphasis`, `soft`, `solid`, or `ghost` variants. Prefer tones for status and exact paints for brands or stable categories. Keep contrast valid in every selected theme.
+
+Themes can change geometry-affecting typography and spacing. The browser runtime repaints compatible theme changes and resolves again when layout tokens differ.
+
+Next: [timelines](/docs/language/timelines).

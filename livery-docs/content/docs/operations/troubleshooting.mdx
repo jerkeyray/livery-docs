@@ -1,0 +1,30 @@
+---
+title: Troubleshooting
+description: Diagnose source, layout, runtime, export, and environment failures systematically.
+---
+
+## No document
+
+The failure is syntactic or semantic. Inspect error diagnostics with source spans. Common causes are unknown calls, unsupported named properties, duplicate bindings, missing root layout children, and invalid connector targets.
+
+## Document but no scene
+
+Compilation passed, but no candidate produced valid geometry. Inspect `attempts`, the target width, label length, nested frame density, constraints, and connector pressure. Test at 720 pixels before debugging a narrow chat width.
+
+## Scene but no SVG
+
+Resource validation may have rejected a remote image or missing trusted icon. Check diagnostic codes and the active resource policy.
+
+## Streaming flashes errors
+
+Use `LiveryChatVisual`, pass the real streaming state, and keep `retainLastValid` enabled. Do not surface transient parse failures as final UI errors.
+
+## Responsive mode does not update
+
+Ensure the container has a non-zero width and the environment provides `ResizeObserver`. Otherwise pass an explicit width and update it from your layout system.
+
+## PNG differs or fails
+
+Confirm Core and Export Node share one revision, use the same theme, icons, resource policy, and width, and validate the SVG before rasterization.
+
+When reporting a bug, include source, width, theme, package revisions, diagnostics, validation attempts, runtime, and the smallest reproducing fixture.

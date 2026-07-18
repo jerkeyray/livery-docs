@@ -1,0 +1,27 @@
+---
+title: Evaluation and security
+description: Measure agent output beyond parse rate and preserve application security boundaries.
+---
+
+## Evaluate in layers
+
+| Layer | Example measure |
+| --- | --- |
+| Contract | Source-only response, one figure, bounded size. |
+| Compilation | Document produced without errors. |
+| Geometry | Valid scene at target widths. |
+| Semantics | Required entities and relationships are represented. |
+| Visual quality | Labels, hierarchy, routing, density, and emphasis are legible. |
+| Efficiency | Tokens, latency, repair count, and retained revisions. |
+
+Use deterministic fixture prompts and keep accepted outputs for regression review. Evaluate at narrow and wide widths; compiler success at 720 pixels does not prove chat-width usefulness.
+
+## Security boundaries
+
+- Model output never populates JavaScript, theme objects, or icon registries.
+- Remote images remain denied unless an application allowlists exact HTTPS hosts.
+- Source, repair excerpts, diagnostics, timeline states, and conversation history remain bounded.
+- The application owns authentication, authorization, provider keys, rate limits, and surrounding assistant content policy.
+- Labels and comments are treated as untrusted data throughout repair prompts and SVG output.
+
+See [security operations](/docs/operations/security) for runtime resource defaults.

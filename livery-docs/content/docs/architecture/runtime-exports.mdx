@@ -1,0 +1,27 @@
+---
+title: Runtime and export architecture
+description: Reuse solved geometry across retained browser revisions, timelines, and output formats.
+---
+
+## Browser revisions
+
+The Web runtime owns the current source, solved revision, selected theme, timeline state, and optional `ResizeObserver`. A valid update becomes `ready`. An invalid update becomes `retained` when an older valid scene exists, otherwise `invalid`.
+
+Stable node and connector IDs form the patching boundary. When scene identity matches, the runtime synchronizes SVG attributes and descendants in place. A structural change replaces the tree.
+
+## Timeline presentation
+
+Timeline state is computed against the accepted base scene. Visibility, focus, trace, and supported style changes are applied during SVG presentation without mutating the document or solving geometry again. Transitions animate presentation values and honor reduced-motion preferences.
+
+## Exports
+
+```text
+BoardScene
+  ├─ boardSceneToSvg → SVG
+  ├─ structured result → JSON
+  └─ validated SVG → Resvg → PNG
+```
+
+CLI output calls the same public render/export functions. Resource checks happen before SVG is accepted and again before Node rasterization where appropriate.
+
+Responsive rendering starts the solve again with a new width; it does not scale a previous scene.

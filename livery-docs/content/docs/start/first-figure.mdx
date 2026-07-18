@@ -1,0 +1,39 @@
+---
+title: Your first figure
+description: Author stable elements, connect anchors, choose a layout, and inspect diagnostics.
+---
+
+Create `request.livery`:
+
+```livery
+figure request("Request path") {
+  client = browser("Browser")
+  api = service("Orders API")
+  orders = database("Orders")
+
+  send = client.right -> api.left("POST /orders")
+  store = api.right -> orders.left("write", tone: success)
+
+  row(client, api, orders, gap: xl)
+}
+```
+
+The bindings are stable identities. Anchors make direction explicit. `row` gives the solver composition rather than board coordinates.
+
+## Render with Core
+
+```ts
+import { render } from "@jerkeyray/core";
+
+const result = render(source, { width: 720 });
+if (!result.svg) {
+  console.error(result.diagnostics);
+  return;
+}
+
+document.querySelector("#figure")!.innerHTML = result.svg;
+```
+
+Warnings may coexist with valid output, so check the output you requested rather than `diagnostics.length`.
+
+Next: [learn the program structure](/docs/language/programs-values) or [choose a package](/docs/start/packages).

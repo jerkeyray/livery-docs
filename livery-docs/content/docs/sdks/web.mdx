@@ -1,0 +1,35 @@
+---
+title: Browser runtime
+description: Mount a retained, responsive visual directly into a DOM container.
+---
+
+```ts
+import { mountLiveryVisual } from "@jerkeyray/web";
+import "@jerkeyray/web/styles.css";
+
+const instance = mountLiveryVisual(container, source, {
+  responsive: true,
+  retainLastValid: true,
+  onRevision(revision) {
+    console.log(revision.status, revision.diagnostics);
+  },
+});
+
+instance.update(nextSource);
+instance.setState("complete");
+instance.setTheme(nextTheme);
+instance.destroy();
+```
+
+## Revision states
+
+| Status | Meaning |
+| --- | --- |
+| `empty` | No source and no retained scene. |
+| `ready` | Current source produced a valid document and scene. |
+| `retained` | Current source failed, so the previous valid scene remains. |
+| `invalid` | No valid scene is available. |
+
+When node and connector identity is stable, the runtime patches the current SVG tree instead of replacing it. Theme-only changes repaint without compilation when layout-affecting tokens are compatible.
+
+Read `instance.revision`; the direct `document`, `scene`, and `diagnostics` getters are deprecated compatibility accessors.

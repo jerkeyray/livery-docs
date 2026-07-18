@@ -1,0 +1,33 @@
+---
+title: Core API
+description: Compile source and request a validated document, scene, SVG, or JSON export.
+---
+
+`@jerkeyray/core` is framework-independent and has no DOM requirement for the canonical synchronous renderer.
+
+```ts
+import { compileProgram, render, exportVisual } from "@jerkeyray/core";
+
+const compiled = compileProgram(source);
+const rendered = render(source, { width: 720 });
+const json = exportVisual(source, { format: "json", width: 720, pretty: true });
+```
+
+## Choose the result boundary
+
+- `compileProgram` returns a `VisualDocument` when syntax and semantics are valid.
+- `render` adds pinboard solving, geometry/resource validation, a `BoardScene`, and SVG.
+- `exportVisual` wraps the same result as SVG or deterministic scene JSON.
+
+```ts
+const result = render(source, { width: 720 });
+if (!result.document) return reportCompilerErrors(result.diagnostics);
+if (!result.scene || !result.svg) return reportLayoutErrors(result.diagnostics, result.attempts);
+show(result.svg);
+```
+
+`report` describes geometry validation. `attempts` explains rejected layout candidates. An existing SVG may coexist with warnings.
+
+Agent helpers such as `getLanguageCatalog`, `createAgentGuide`, `createRepairPrompt`, and `applyDiagnosticFix` are also exported from Core.
+
+Earlier artifact, `renderHeadless`, and generic layout-adapter APIs remain compatibility surfaces; see [compatibility](/docs/operations/compatibility).

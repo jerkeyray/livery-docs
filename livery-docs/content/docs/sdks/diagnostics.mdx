@@ -1,0 +1,36 @@
+---
+title: Diagnostics and repairs
+description: Interpret compiler, layout, geometry, and resource failures without parsing message strings.
+---
+
+Every diagnostic has a stable `code`, severity, message, and optional source span, scene path, and repair metadata.
+
+```ts
+type Diagnostic = {
+  code: string;
+  severity: "error" | "warning" | "info";
+  message: string;
+  span?: SourceSpan;
+  path?: Array<string | number>;
+  repair?: { description: string; knownIds?: string[]; edits?: TextEdit[] };
+};
+```
+
+## Handle by capability
+
+```ts
+import { applyDiagnosticFix, render } from "@jerkeyray/core";
+
+const result = render(source, { width: 420 });
+if (!result.svg) {
+  const exact = result.diagnostics
+    .map((diagnostic) => applyDiagnosticFix(source, diagnostic))
+    .find(Boolean);
+}
+```
+
+Use `span` for editor highlighting, `path` for compiled-scene inspection, `repair.edits` for deterministic changes, and the repair description for a bounded model retry. Do not branch on English message text.
+
+Compiler errors usually have source spans. Layout and geometry errors may instead include validation reports and candidate attempts. Resource errors identify denied images or unregistered icons.
+
+Next: [agent validation and repair](/docs/agents/validation-repair).

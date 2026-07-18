@@ -1,0 +1,18 @@
+---
+title: Choose a package
+description: Match each Livery package to its supported runtime boundary.
+---
+
+| Package | Choose it when… |
+| --- | --- |
+| `@jerkeyray/core` | You need compilation, solving, validation, SVG/JSON, themes, catalogs, or agent helpers without a UI framework. |
+| `@jerkeyray/web` | You mount and update visuals directly in the browser. |
+| `@jerkeyray/react` | You render complete or streamed source in React. |
+| `@jerkeyray/export-node` | Node or Bun must rasterize validated SVG to PNG. |
+| `@jerkeyray/cli` | A shell or CI job validates and exports `.livery` files. |
+
+Most React products use React plus its stylesheet. Server-only systems use Core and optionally Export Node. Do not import Web internals from a React application unless you need direct instance control.
+
+Core exposes compatibility APIs for the earlier `flow` artifact pipeline. New work should use `figure`, `render`, `exportVisual`, `VisualDocument`, and `BoardScene`.
+
+Next: open the relevant [SDK guide](/docs/sdks).

@@ -1,0 +1,26 @@
+---
+title: Core architecture
+description: Follow Livery source through compilation, solving, validation, rendering, and retained updates.
+---
+
+The architecture is organized around one rule: an invalid scene does not reach a renderer.
+
+```text
+source
+  → tokenizer and parser
+  → semantic validation and component expansion
+  → VisualDocument
+  → pinboard candidate solving
+  → geometry and resource validation
+  → BoardScene
+  → SVG, browser runtime, React, JSON, PNG, or CLI
+```
+
+<Cards>
+  <Card title="Compiler pipeline" description="Parsing, contracts, expansion, identities, and diagnostics." href="/docs/architecture/compiler" />
+  <Card title="Document and scene" description="The semantic model before layout and solved model after layout." href="/docs/architecture/document-scene" />
+  <Card title="Layout and validation" description="Candidate solving, routing, measurement, and geometry gates." href="/docs/architecture/layout-validation" />
+  <Card title="Runtime and exports" description="Retained revisions, SVG patching, timelines, and portable output." href="/docs/architecture/runtime-exports" />
+</Cards>
+
+This section describes the programmable `figure` architecture. The earlier artifact/headless pipeline is isolated under [compatibility](/docs/operations/compatibility).

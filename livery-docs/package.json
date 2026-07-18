@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "bootstrap:livery": "node scripts/bootstrap-livery.mjs",
-    "build": "bun run bootstrap:livery && next build --webpack",
+    "docs:generate": "bun run bootstrap:livery && node scripts/generate-reference.mjs",
+    "docs:check": "bun run bootstrap:livery && node scripts/generate-reference.mjs --check && node scripts/check-docs.mjs",
+    "build": "bun run docs:generate && next build --webpack",
     "dev": "bun run bootstrap:livery && next dev --webpack",
     "start": "next start",
-    "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
+    "types:check": "bun run docs:generate && fumadocs-mdx && next typegen && tsc --noEmit",
     "postinstall": "fumadocs-mdx",
     "lint": "eslint"
   },

@@ -1,4 +1,4 @@
 {
-  "title": "Agent guide",
-  "pages": ["index", "generation", "repair-loop"]
+  "title": "Generate with an agent",
+  "pages": ["index", "contract", "prompting", "validation-repair", "streaming", "evaluation-security"]
 }

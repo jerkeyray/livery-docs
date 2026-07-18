@@ -2,12 +2,13 @@
   "title": "Livery",
   "pages": [
     "index",
-    "getting-started",
+    "start",
     "language",
-    "react",
+    "sdks",
     "agents",
-    "diagnostics",
-    "exports",
-    "security"
+    "examples",
+    "reference",
+    "architecture",
+    "operations"
   ]
 }

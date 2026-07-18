@@ -1,24 +1,24 @@
 ---
-title: Livery
-description: A visual language for agents.
+title: Livery documentation
+description: Build validated technical visuals by hand or generate them safely with an agent.
 ---
 
-Livery turns small programs into validated, responsive technical visuals.
+Livery turns small programs into validated, responsive technical visuals. The same readable language works for people writing a figure and agents generating one from an explanation.
 
 The important word there is **validated**. A renderer should not smile politely and draw a broken diagram because the source was almost correct. Livery compiles the program, solves the layout, checks the geometry, and only then hands a scene to the renderer.
 
 ```text
 Livery source
-  → compile
-  → solve layout
-  → validate geometry
-  → render or export
+  → parse and expand
+  → solve the pinboard
+  → validate geometry and resources
+  → render or export a BoardScene
 ```
 
 If that pipeline fails, you get typed diagnostics instead of a best-effort mess.
 
 <Callout type="info" title="Working from source">
-  The packages are not published to npm yet. The getting-started guide explains how to build Livery from the repository.
+  The packages are not published to npm yet. The [installation guide](/docs/start/install) explains how to build Livery from the repository.
 </Callout>
 
 ## A small example
@@ -38,18 +38,25 @@ figure request("Request path") {
 
 There are no board-level coordinates here. The bindings give every element a stable identity, the anchors make the connections explicit, and `row` gives the solver the composition rather than a pile of pixels.
 
-## Pick the path you need
+## Choose your path
 
 <Cards>
-  <Card title="Open Studio" description="Describe a diagram in chat and inspect the validated Livery scene." href="/studio" />
-  <Card title="Run the project" description="Build the monorepo and render your first local figure." href="/docs/getting-started" />
-  <Card title="Learn the syntax" description="The canonical language guide for human authors and generating agents." href="/docs/language" />
-  <Card title="Render in React" description="Static visuals, streamed source, timelines, and diagnostics." href="/docs/react" />
-  <Card title="Give it to an agent" description="Generate the release-matched guide and build a bounded repair loop." href="/docs/agents" />
+  <Card title="Build with Livery" description="Install from source, learn the language, and integrate the right runtime." href="/docs/start" />
+  <Card title="Generate with an agent" description="Use a release-matched contract, compiler validation, and bounded repairs." href="/docs/agents" />
+  <Card title="Language reference" description="Learn the authoring model or inspect the compiler-derived standard library." href="/docs/language" />
+  <Card title="Understand the system" description="Follow source through compilation, layout, validation, and rendering." href="/docs/architecture" />
 </Cards>
 
 ## What Livery is for
 
-Livery is aimed at technical visuals inside agent products: request paths, tool traces, data pipelines, architecture figures, state transitions, and small explainers. It gives a model enough freedom to explain something visually without giving it arbitrary SVG, JavaScript, or an infinite canvas.
+Livery is aimed at technical visuals inside agent products: request paths, tool traces, data pipelines, architecture figures, state transitions, and small explainers. It gives an author enough freedom to explain visually without exposing arbitrary JavaScript or an infinite board.
 
-That trade is deliberate. Livery is not a general illustration tool, and it is not trying to be one.
+That trade is deliberate. Livery is not a general illustration tool. Every accepted scene must have valid geometry.
+
+## Find an answer quickly
+
+- Choose a package in [SDKs and tooling](/docs/sdks).
+- Copy a working visual from the [example gallery](/docs/examples).
+- Diagnose invalid source with [typed diagnostics](/docs/sdks/diagnostics).
+- Check exact calls and parameters in the [generated reference](/docs/reference/standard-library).
+- Read release and installation constraints in [release status](/docs/operations/release-status).

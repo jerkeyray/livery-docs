@@ -1,0 +1,20 @@
+---
+title: Constraints
+description: Add bounded relational requirements after choosing a primary layout.
+---
+
+Constraints refine a composition; they do not replace the root layout. Supported calls include alignment, distribution, containment, and proximity relationships.
+
+```text
+align(api, worker, axis: y)
+near(cache, api, distance: md)
+inside(worker, cluster)
+```
+
+Use constraints when the primary layout expresses most of the structure but one semantic relationship must survive candidate solving. Too many constraints can make a dense scene unsatisfiable, so prefer a better root layout first.
+
+The compiler validates targets before layout. The pinboard then evaluates whether a candidate can honor the requirement without creating invalid geometry. Failed attempts are available through `render(...).attempts` for debugging.
+
+Consult the [generated call contracts](/docs/reference/standard-library) before using a constraint; parameter shapes are intentionally narrower than general constraint solvers.
+
+Next: [canvas and primitives](/docs/language/canvas).

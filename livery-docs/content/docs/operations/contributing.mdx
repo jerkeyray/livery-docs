@@ -1,0 +1,39 @@
+---
+title: Contributing
+description: Change language, geometry, packages, and docs without letting their contracts drift.
+---
+
+The core monorepo uses Bun workspaces. Install once, then run focused tests while developing.
+
+```sh
+bun install
+bun run typecheck
+bun run test
+bun run build
+```
+
+Before a release, the repository also runs agent evaluation, documentation checks, package linting, package smoke tests, and browser visual tests.
+
+## When the language changes
+
+Update the compiler contract and implementation together. Add parser/semantic tests, valid and invalid fixtures, catalog assertions, agent-guide coverage, and geometry tests where output changes. The public docs reference is generated from the catalog after the docs site bootstraps that revision.
+
+## When geometry changes
+
+Test narrow and wide widths, nested frames, connector routing, label measurement, timelines, and retained Web updates. Review Playwright screenshots rather than updating snapshots blindly.
+
+## When docs change
+
+In `livery-docs/livery-docs` run:
+
+```sh
+bun run docs:generate
+bun run docs:check
+bun run types:check
+bun test
+bun run build
+```
+
+Every fenced `livery` example must compile. Internal `/docs` links and generated catalog coverage are checked automatically.
+
+Keep commits user-controlled. The project convention uses lowercase conventional messages such as `feat: expand language reference` or `fix: correct timeline example`.

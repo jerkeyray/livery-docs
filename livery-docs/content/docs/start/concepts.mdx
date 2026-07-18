@@ -1,0 +1,29 @@
+---
+title: Core concepts
+description: Source, documents, scenes, validation, and retained rendering in plain language.
+---
+
+Livery separates **what a visual means** from **where every pixel lands**.
+
+| Concept | Meaning |
+| --- | --- |
+| Source | A bounded, single-file Livery program. |
+| Binding | A stable authored identity such as `api` or `write`. |
+| `VisualDocument` | The compiled semantic tree, connectors, constraints, and timelines. |
+| `BoardScene` | The solved geometry for one width. |
+| Diagnostic | A typed error, warning, or repair hint. |
+| Revision | A browser-runtime result: `empty`, `ready`, `retained`, or `invalid`. |
+
+## Geometry is a gate
+
+The compiler does not send a best-effort broken scene to a renderer. It expands components, solves candidate layouts, checks bounds, collisions, text fit, connectors, and resources, and only then produces SVG.
+
+## Layout is responsive, not fluid
+
+A scene is solved for a specific width. Responsive runtimes observe their container and solve again when that width changes. Exporting three sizes means solving the same source three times.
+
+## Generated source is still untrusted
+
+The language has no JavaScript, I/O, mutation, recursion, or unbounded loops. Resource policies and trusted icon registries remain application-owned. See [security boundaries](/docs/operations/security).
+
+Next: [install Livery from source](/docs/start/install).

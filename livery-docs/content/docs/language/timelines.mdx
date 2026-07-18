@@ -1,0 +1,36 @@
+---
+title: Timelines
+description: Describe state changes without changing the solved base scene.
+---
+
+Timelines apply presentation operations to stable node and connector IDs. Use them when the explanation changes, not as decoration on static architecture.
+
+```livery
+figure checkout("Checkout") {
+  user = person("Customer")
+  api = service("API")
+  db = database("Orders")
+  request = user.right -> api.left("submit")
+  persist = api.right -> db.left("write")
+  row(user, api, db, gap: xl)
+
+  timeline checkout {
+    state request {
+      show(user, api)
+      trace(request)
+    }
+    state complete {
+      show(db)
+      trace(persist)
+      focus(db)
+    }
+    transition request -> complete(duration: normal)
+  }
+}
+```
+
+Operations include showing, hiding, focusing, tracing, setting supported presentation properties, and compatible path morphs. Timelines do not mutate the compiled document or re-run layout for each state.
+
+React can render accessible controls automatically; Web instances expose `setState`. Motion respects `prefers-reduced-motion`.
+
+Next: [React timeline controls](/docs/sdks/react) or the [timeline gallery](/docs/examples/timeline).

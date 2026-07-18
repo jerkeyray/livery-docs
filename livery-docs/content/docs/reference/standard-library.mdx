@@ -1,0 +1,1472 @@
+---
+title: Standard library reference
+description: Release-matched components, calls, parameters, ports, and tokens generated from the compiler contract.
+full: true
+---
+
+<Callout type="info" title="Generated from the compiler">
+  This page is generated from `getLanguageCatalog()` by `bun run docs:generate`. Do not edit it by hand.
+</Callout>
+
+## Components
+
+| Component | Category | Status | Description | Ports |
+| --- | --- | --- | --- | --- |
+| `person` | people | supported | A single person or user. | `top`, `right`, `bottom`, `left`, `center` |
+| `team` | people | supported | A group of people acting together. | `top`, `right`, `bottom`, `left`, `center` |
+| `service` | compute | supported | A software service or application boundary. | `top`, `right`, `bottom`, `left`, `center` |
+| `api` | compute | supported | An application programming interface. | `top`, `right`, `bottom`, `left`, `center` |
+| `database` | storage | supported | A persistent database. | `top`, `right`, `bottom`, `left`, `center` |
+| `cache` | storage | supported | A low-latency cache. | `top`, `right`, `bottom`, `left`, `center` |
+| `objectStore` | storage | supported | An object or blob store. | `top`, `right`, `bottom`, `left`, `center` |
+| `warehouse` | storage | supported | An analytical data warehouse. | `top`, `right`, `bottom`, `left`, `center` |
+| `queue` | messaging | supported | A queued message channel. | `top`, `right`, `bottom`, `left`, `center` |
+| `topic` | messaging | supported | A publish-subscribe topic. | `top`, `right`, `bottom`, `left`, `center` |
+| `stream` | messaging | supported | An ordered event stream. | `top`, `right`, `bottom`, `left`, `center` |
+| `event` | messaging | supported | An event or emitted message. | `top`, `right`, `bottom`, `left`, `center` |
+| `browser` | device | supported | A web browser client. | `top`, `right`, `bottom`, `left`, `center` |
+| `mobile` | device | supported | A mobile device or application. | `top`, `right`, `bottom`, `left`, `center` |
+| `terminal` | device | supported | A command-line terminal. | `top`, `right`, `bottom`, `left`, `center` |
+| `server` | compute | supported | A server or compute host. | `top`, `right`, `bottom`, `left`, `center` |
+| `agent` | ai | supported | An autonomous or assisted agent. | `top`, `right`, `bottom`, `left`, `center` |
+| `model` | ai | supported | A machine-learning or language model. | `top`, `right`, `bottom`, `left`, `center` |
+| `tool` | ai | supported | A tool callable by an agent or model. | `top`, `right`, `bottom`, `left`, `center` |
+| `worker` | compute | supported | A background worker or process. | `top`, `right`, `bottom`, `left`, `center` |
+| `file` | content | supported | A file artifact. | `top`, `right`, `bottom`, `left`, `center` |
+| `document` | content | supported | A structured document. | `top`, `right`, `bottom`, `left`, `center` |
+| `code` | content | supported | A source-code or protocol block. | `top`, `right`, `bottom`, `left`, `center` |
+| `table` | content | supported | A compact structured table. | `top`, `right`, `bottom`, `left`, `center` |
+| `note` | content | supported | A short contextual note. | `top`, `right`, `bottom`, `left`, `center` |
+| `callout` | content | supported | An annotation connected to visual content. | `top`, `right`, `bottom`, `left`, `center` |
+| `badge` | content | supported | A compact status or category badge. | `top`, `right`, `bottom`, `left`, `center` |
+| `card` | content | supported | A generic editorial card without a technical glyph. | `top`, `right`, `bottom`, `left`, `center` |
+| `list` | content | supported | A bounded editorial list of descriptive leaves. | `top`, `right`, `bottom`, `left`, `center` |
+| `legend` | content | supported | A legend explaining visual encodings. | `top`, `right`, `bottom`, `left`, `center` |
+| `boundary` | content | supported | A labeled grouping boundary. | `top`, `right`, `bottom`, `left`, `center` |
+| `barChart` | chart | experimental | A basic bar chart. | `top`, `right`, `bottom`, `left`, `center` |
+| `lineChart` | chart | experimental | A basic line chart. | `top`, `right`, `bottom`, `left`, `center` |
+| `areaChart` | chart | experimental | A basic area chart. | `top`, `right`, `bottom`, `left`, `center` |
+| `progress` | chart | experimental | A quantitative progress indicator. | `top`, `right`, `bottom`, `left`, `center` |
+| `participant` | interaction | supported | A participant in an ordered interaction narrative. | `top`, `right`, `bottom`, `left`, `center` |
+| `interactionFragment` | interaction | supported | A bounded alternative, loop, or parallel interaction fragment. | `top`, `right`, `bottom`, `left`, `center` |
+| `classCard` | schema | supported | A structured class with typed fields and methods. | `top`, `right`, `bottom`, `left`, `center` |
+| `entity` | schema | supported | A structured data entity with keys and typed fields. | `top`, `right`, `bottom`, `left`, `center` |
+| `stateNode` | state | supported | A state with optional entry and exit behavior. | `top`, `right`, `bottom`, `left`, `center` |
+| `choice` | state | supported | A validated decision point in a state machine. | `top`, `right`, `bottom`, `left`, `center` |
+| `requirement` | schema | supported | A typed requirement with risk and verification metadata. | `top`, `right`, `bottom`, `left`, `center` |
+| `evidence` | schema | supported | Evidence linked to a requirement or verification outcome. | `top`, `right`, `bottom`, `left`, `center` |
+
+## Language calls
+
+### `text`
+
+Render authored text. **Status:** supported. **Contexts:** `figure`, `component`, `canvas`.
+
+- `text: string`
+- `x?: number`
+- `y?: number`
+- `width?: length`
+- `height?: length`
+- `layer?: number`
+- `clip?: identifier`
+- `mask?: identifier`
+- `translateX?: number`
+- `translateY?: number`
+- `scale?: number`
+- `scaleX?: number`
+- `scaleY?: number`
+- `rotate?: number`
+- `fill?: paint`
+- `opacity?: number`
+- `color?: paint`
+- `fontSize?: length`
+- `fontWeight?: number`
+
+### `box`
+
+Render a rectangular visual primitive. **Status:** supported. **Contexts:** `figure`, `component`, `canvas`.
+
+- `label?: string`
+- `x?: number`
+- `y?: number`
+- `width?: length`
+- `height?: length`
+- `layer?: number`
+- `clip?: identifier`
+- `mask?: identifier`
+- `translateX?: number`
+- `translateY?: number`
+- `scale?: number`
+- `scaleX?: number`
+- `scaleY?: number`
+- `rotate?: number`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `opacity?: number`
+- `color?: paint`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `radius?: length`
+
+### `circle`
+
+Render a circular visual primitive. **Status:** supported. **Contexts:** `figure`, `component`, `canvas`.
+
+- `label?: string`
+- `x?: number`
+- `y?: number`
+- `width?: length`
+- `height?: length`
+- `layer?: number`
+- `clip?: identifier`
+- `mask?: identifier`
+- `translateX?: number`
+- `translateY?: number`
+- `scale?: number`
+- `scaleX?: number`
+- `scaleY?: number`
+- `rotate?: number`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `opacity?: number`
+- `color?: paint`
+- `fontSize?: length`
+- `fontWeight?: number`
+
+### `line`
+
+Render a line primitive. **Status:** supported. **Contexts:** `figure`, `component`, `canvas`.
+
+- `x?: number`
+- `y?: number`
+- `width?: length`
+- `height?: length`
+- `layer?: number`
+- `clip?: identifier`
+- `mask?: identifier`
+- `translateX?: number`
+- `translateY?: number`
+- `scale?: number`
+- `scaleX?: number`
+- `scaleY?: number`
+- `rotate?: number`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `opacity?: number`
+
+### `path`
+
+Render an SVG path primitive. **Status:** supported. **Contexts:** `figure`, `component`, `canvas`.
+
+- `x?: number`
+- `y?: number`
+- `width?: length`
+- `height?: length`
+- `layer?: number`
+- `clip?: identifier`
+- `mask?: identifier`
+- `translateX?: number`
+- `translateY?: number`
+- `scale?: number`
+- `scaleX?: number`
+- `scaleY?: number`
+- `rotate?: number`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `opacity?: number`
+- `d: string`
+
+### `image`
+
+Render an image from an allowed source. **Status:** supported. **Contexts:** `figure`, `component`, `canvas`.
+
+- `x?: number`
+- `y?: number`
+- `width?: length`
+- `height?: length`
+- `layer?: number`
+- `clip?: identifier`
+- `mask?: identifier`
+- `translateX?: number`
+- `translateY?: number`
+- `scale?: number`
+- `scaleX?: number`
+- `scaleY?: number`
+- `rotate?: number`
+- `src: string`
+- `alt?: string`
+- `opacity?: number`
+
+### `icon`
+
+Render a curated vector icon. **Status:** supported. **Contexts:** `figure`, `component`, `canvas`.
+
+- `x?: number`
+- `y?: number`
+- `width?: length`
+- `height?: length`
+- `layer?: number`
+- `clip?: identifier`
+- `mask?: identifier`
+- `translateX?: number`
+- `translateY?: number`
+- `scale?: number`
+- `scaleX?: number`
+- `scaleY?: number`
+- `rotate?: number`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `opacity?: number`
+- `name: string`
+
+### `group`
+
+Group child visuals without adding geometry. **Status:** supported. **Contexts:** `figure`, `component`, `canvas`.
+
+- `x?: number`
+- `y?: number`
+- `width?: length`
+- `height?: length`
+- `layer?: number`
+- `clip?: identifier`
+- `mask?: identifier`
+- `translateX?: number`
+- `translateY?: number`
+- `scale?: number`
+- `scaleX?: number`
+- `scaleY?: number`
+- `rotate?: number`
+- `opacity?: number`
+
+### `frame`
+
+Create a labeled visual boundary with an internal layout. **Status:** supported. **Contexts:** `figure`, `component`, `canvas`.
+
+- `label?: string`
+- `subtitle?: string`
+- `layout?: identifier` — `row`, `column`, `grid`, `flow`, `hierarchy`, `interaction`, `stack`, `overlay`
+- `columns?: number`
+- `gap?: length`
+- `rankGap?: length`
+- `direction?: string` — `auto`, `right`, `down`
+- `maxCandidates?: number`
+- `padding?: length`
+- `align?: string` — `start`, `center`, `end`, `stretch`
+- `distribute?: string` — `start`, `center`, `end`, `between`, `around`
+- `width?: length`
+- `height?: length`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `opacity?: number`
+- `color?: paint`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `radius?: length`
+
+### `repeat`
+
+Repeat a bounded primitive template. **Status:** supported. **Contexts:** `canvas`.
+
+- `x?: number`
+- `y?: number`
+- `width?: length`
+- `height?: length`
+- `layer?: number`
+- `clip?: identifier`
+- `mask?: identifier`
+- `translateX?: number`
+- `translateY?: number`
+- `scale?: number`
+- `scaleX?: number`
+- `scaleY?: number`
+- `rotate?: number`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `opacity?: number`
+- `color?: paint`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `count: number`
+- `kind: string` — `box`, `circle`, `line`, `path`, `text`, `icon`
+- `stepX?: number`
+- `stepY?: number`
+- `radius?: length`
+- `d?: string`
+- `name?: string`
+- `text?: string`
+
+### `row`
+
+Arrange children horizontally. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `child: identifier`
+- `gap?: length`
+- `width?: length`
+- `height?: length`
+- `align?: string` — `start`, `center`, `end`, `stretch`
+- `distribute?: string` — `start`, `center`, `end`, `between`, `around`
+
+### `column`
+
+Arrange children vertically. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `child: identifier`
+- `gap?: length`
+- `width?: length`
+- `height?: length`
+- `align?: string` — `start`, `center`, `end`, `stretch`
+- `distribute?: string` — `start`, `center`, `end`, `between`, `around`
+
+### `grid`
+
+Arrange children in deterministic grid tracks. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `child: identifier`
+- `gap?: length`
+- `width?: length`
+- `height?: length`
+- `columns: number`
+- `align?: string` — `start`, `center`, `end`, `stretch`
+- `distribute?: string` — `start`, `center`, `end`, `between`, `around`
+
+### `flow`
+
+Arrange a connected compound graph by its reading direction. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `child: identifier`
+- `gap?: length`
+- `width?: length`
+- `height?: length`
+- `direction?: string` — `auto`, `right`, `down`
+- `rankGap?: length`
+- `maxCandidates?: number`
+
+### `hierarchy`
+
+Arrange a reporting tree or taxonomy with deterministic tidy-tree placement. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `child: identifier`
+- `gap?: length`
+- `width?: length`
+- `height?: length`
+- `direction?: string` — `auto`, `right`, `down`
+- `rankGap?: length`
+- `maxCandidates?: number`
+
+### `interaction`
+
+Arrange stable participants in lanes and ordered messages in time. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `child: identifier`
+- `gap?: length`
+- `width?: length`
+- `height?: length`
+- `maxCandidates?: number`
+
+### `stack`
+
+Stack children in one aligned region. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `child: identifier`
+- `width?: length`
+- `height?: length`
+- `align?: string` — `start`, `center`, `end`, `stretch`
+
+### `overlay`
+
+Overlay children in one aligned region. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `child: identifier`
+- `width?: length`
+- `height?: length`
+- `align?: string` — `start`, `center`, `end`, `stretch`
+
+### `canvas`
+
+Create a bounded local coordinate system. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `child?: identifier`
+- `width: length`
+- `height: length`
+- `bleed?: length`
+- `clip?: boolean`
+
+### `connect`
+
+Connect two stable element anchors. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `from: identifier`
+- `to: identifier`
+- `label?: string`
+- `variant?: string` — `directional`, `bidirectional`, `async`, `data`, `advisory`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `role?: identifier` — `auto`, `primary`, `secondary`, `supporting`
+- `bundleId?: identifier`
+- `semantic?: identifier` — `message`, `transition`, `association`, `inheritance`, `composition`, `aggregation`, `dependency`, `trace`, `verify`, `satisfy`
+- `messageKind?: identifier` — `sync`, `async`, `return`
+- `fromCardinality?: string`
+- `toCardinality?: string`
+- `order?: number`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `opacity?: number`
+
+### `align`
+
+Align visual anchors on a shared axis. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `first: identifier`
+- `second: identifier`
+- `target?: identifier`
+- `axis?: string` — `x`, `y`
+- `edge?: string` — `start`, `center`, `end`
+
+### `distribute`
+
+Distribute visuals evenly along an axis. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `first: identifier`
+- `second: identifier`
+- `third: identifier`
+- `target?: identifier`
+- `axis?: string` — `x`, `y`
+- `gap?: length`
+
+### `inside`
+
+Keep one visual inside another visual's bounds. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `child: identifier`
+- `parent: identifier`
+- `padding?: length`
+
+### `near`
+
+Keep one visual near another with bounded spacing. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `source: identifier`
+- `target: identifier`
+- `distance?: length`
+
+### `show`
+
+Show a stable visual target. **Status:** supported. **Contexts:** `timeline`.
+
+- `target: identifier`
+
+### `hide`
+
+Hide a stable visual target. **Status:** supported. **Contexts:** `timeline`.
+
+- `target: identifier`
+
+### `focus`
+
+Focus a stable visual target. **Status:** supported. **Contexts:** `timeline`.
+
+- `target: identifier`
+
+### `trace`
+
+Trace a stable visual target. **Status:** supported. **Contexts:** `timeline`.
+
+- `target: identifier`
+
+### `set`
+
+Set validated visual properties for one state. **Status:** supported. **Contexts:** `timeline`.
+
+- `target: identifier`
+
+### `morph`
+
+Geometrically morph compatible paths. **Status:** unsupported. **Contexts:** `timeline`.
+
+- `from: identifier`
+- `to: identifier`
+
+### `transition`
+
+Connect two timeline states with a canonical duration. **Status:** supported. **Contexts:** `timeline`.
+
+- `from: identifier`
+- `to: identifier`
+- `duration?: string` — `fast`, `normal`, `slow`
+
+### `person`
+
+A single person or user. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `team`
+
+A group of people acting together. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `service`
+
+A software service or application boundary. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `api`
+
+An application programming interface. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `database`
+
+A persistent database. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `cache`
+
+A low-latency cache. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `objectStore`
+
+An object or blob store. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `warehouse`
+
+An analytical data warehouse. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `queue`
+
+A queued message channel. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `topic`
+
+A publish-subscribe topic. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `stream`
+
+An ordered event stream. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `event`
+
+An event or emitted message. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `browser`
+
+A web browser client. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `mobile`
+
+A mobile device or application. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `terminal`
+
+A command-line terminal. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `server`
+
+A server or compute host. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `agent`
+
+An autonomous or assisted agent. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `model`
+
+A machine-learning or language model. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `tool`
+
+A tool callable by an agent or model. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `worker`
+
+A background worker or process. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `file`
+
+A file artifact. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `document`
+
+A structured document. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `code`
+
+A source-code or protocol block. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `table`
+
+A compact structured table. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `note`
+
+A short contextual note. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `callout`
+
+An annotation connected to visual content. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `badge`
+
+A compact status or category badge. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `card`
+
+A generic editorial card without a technical glyph. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `list`
+
+A bounded editorial list of descriptive leaves. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+- `items: list`
+
+### `legend`
+
+A legend explaining visual encodings. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+- `items: list`
+
+### `boundary`
+
+A labeled grouping boundary. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `barChart`
+
+A basic bar chart. **Status:** experimental. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `lineChart`
+
+A basic line chart. **Status:** experimental. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `areaChart`
+
+A basic area chart. **Status:** experimental. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `progress`
+
+A quantitative progress indicator. **Status:** experimental. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `participant`
+
+A participant in an ordered interaction narrative. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+- `participantType?: identifier`
+
+### `interactionFragment`
+
+A bounded alternative, loop, or parallel interaction fragment. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+- `fragmentType: identifier`
+- `members: list`
+
+### `classCard`
+
+A structured class with typed fields and methods. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+- `fields?: list`
+- `methods?: list`
+
+### `entity`
+
+A structured data entity with keys and typed fields. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+- `fields: list`
+
+### `stateNode`
+
+A state with optional entry and exit behavior. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+- `entry?: string`
+- `exit?: string`
+
+### `choice`
+
+A validated decision point in a state machine. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+
+### `requirement`
+
+A typed requirement with risk and verification metadata. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+- `requirementType?: identifier`
+- `risk?: identifier`
+- `verification?: string`
+- `reference?: string`
+
+### `evidence`
+
+Evidence linked to a requirement or verification outcome. **Status:** supported. **Contexts:** `figure`, `component`.
+
+- `label?: string`
+- `subtitle?: string`
+- `icon?: identifier`
+- `variant?: string` — `default`, `muted`, `emphasis`, `soft`, `solid`, `ghost`
+- `tone?: tone` — `neutral`, `info`, `success`, `warning`, `danger`
+- `fill?: paint`
+- `stroke?: paint`
+- `strokeWidth?: length`
+- `color?: paint`
+- `iconColor?: paint`
+- `radius?: length`
+- `opacity?: number`
+- `fontSize?: length`
+- `fontWeight?: number`
+- `width?: length`
+- `height?: length`
+- `status?: identifier`
+- `reference?: string`
+
+## Semantic tokens
+
+- `color.accent`
+- `color.accentSoft`
+- `color.background`
+- `color.border`
+- `color.canvas`
+- `color.connector`
+- `color.danger`
+- `color.dangerSoft`
+- `color.info`
+- `color.infoSoft`
+- `color.muted`
+- `color.onAccent`
+- `color.success`
+- `color.successSoft`
+- `color.surface`
+- `color.surfaceMuted`
+- `color.text`
+- `color.warning`
+- `color.warningSoft`
+- `elevation.low`
+- `elevation.none`
+- `elevation.raised`
+- `motion.fast`
+- `motion.normal`
+- `motion.slow`
+- `radius.lg`
+- `radius.md`
+- `radius.none`
+- `radius.pill`
+- `radius.sm`
+- `space.lg`
+- `space.md`
+- `space.sm`
+- `space.xl`
+- `space.xs`
+- `stroke.hairline`
+- `stroke.normal`
+- `stroke.strong`
+- `type.body`
+- `type.bodyWeight`
+- `type.caption`
+- `type.fontFamily`
+- `type.label`
+- `type.lineHeight`
+- `type.monoFamily`
+- `type.title`
+- `type.titleWeight`
+
+## Contract status
+
+Supported entries are part of the current alpha contract. Experimental entries may change additively. Unsupported entries are listed so tools can reject invented syntax rather than guessing.

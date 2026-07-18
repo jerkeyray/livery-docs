@@ -1,0 +1,38 @@
+---
+title: Packages and extension points
+description: Understand dependency direction and distinguish supported customization from internal machinery.
+---
+
+## Package boundaries
+
+```text
+                         ┌──────────────┐
+                         │ livery-docs  │
+                         │ Studio/docs  │
+                         └──────┬───────┘
+                                │ bootstraps
+┌──────────────┐         ┌──────▼───────┐
+│ @jerkeyray/  │────────▶│ @jerkeyray/  │◀────────┐
+│ export-node  │         │ core         │         │
+└──────▲───────┘         └──────▲───────┘         │
+       │                        │                 │
+┌──────┴───────┐         ┌──────┴───────┐  ┌──────┴───────┐
+│ @jerkeyray/  │         │ @jerkeyray/  │  │ @jerkeyray/  │
+│ cli          │         │ web          │  │ react        │
+└──────────────┘         └──────▲───────┘  └──────┬───────┘
+                                └─────────────────┘
+```
+
+Core owns language, semantics, solving, validation, themes, timelines, catalogs, diagnostics, and portable exports. Web adds DOM retention. React wraps Web. Export Node rasterizes Core SVG. CLI composes Core and Export Node. The docs site bootstraps matching Core/Web/React snapshots and hosts Studio.
+
+## Supported extension points
+
+- Authored source `component` declarations.
+- `LiveryTheme` and bounded token overrides.
+- Trusted application-owned `IconRegistry` values.
+- Exact remote-image host allowlists and data-image limits.
+- Documented measurement and render options.
+
+## Internal or compatibility surfaces
+
+Do not build new integrations around legacy artifacts, generic headless layout adapters, deprecated direct instance getters, solver candidate internals, or undocumented parser structures. They remain exported where compatibility or tooling requires them, but the `figure` → `VisualDocument` → `BoardScene` pipeline is canonical.

@@ -1,0 +1,28 @@
+---
+title: Streaming generated source
+description: Retain accepted geometry while incomplete tokens are still arriving.
+---
+
+Token streams are syntactically incomplete for most of their lifetime. A missing closing brace while generation continues is not a final user-facing error.
+
+```tsx
+<LiveryChatVisual
+  source={accumulatedSource}
+  streaming={!finished}
+  compileDelay={80}
+  fallback={<p>The visual could not be rendered.</p>}
+  onRevision={(revision) => telemetry(revision.status, revision.diagnostics)}
+/>
+```
+
+The component retains the last valid scene during generation and suppresses the fallback until the stream finishes. A final `retained` revision is still a failure: it means the newest source was invalid even though an older scene exists.
+
+## Application responsibilities
+
+- Accumulate text without Markdown fence markers.
+- Pass the provider’s real streaming state.
+- Abort provider work when the surrounding request is cancelled.
+- Enter the repair path after final invalid or retained output.
+- Keep source size, conversation context, and retry count bounded.
+
+Stable bindings let the Web runtime patch matching SVG nodes rather than replacing the entire scene at each valid revision.

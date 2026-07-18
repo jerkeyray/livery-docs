@@ -1,0 +1,21 @@
+---
+title: Accessibility
+description: Make generated technical visuals understandable without pointer, motion, or sight.
+---
+
+SVG exports include an accessible title and description derived from the figure and solved scene. Give figures meaningful titles and keep labels informative rather than decorative.
+
+## Application checklist
+
+- Provide surrounding prose for conclusions the geometry alone cannot communicate.
+- Do not encode status only with color; use labels, connector variants, or semantic structure.
+- Test theme contrast and product-level forced-color behavior.
+- Keep labels readable at every supported width.
+- Preserve visible keyboard focus around timeline controls.
+- Announce selected timeline state and support arrow, Home, and End keys.
+- Honor `prefers-reduced-motion`; Livery timeline animation already checks it.
+- Provide a textual or tabular alternative for a dense visual when the relationships are essential.
+
+The renderer cannot make hostile or meaningless model labels accessible. Validate generated content and the surrounding explanation before presentation.
+
+Canvas primitives require deliberate text alternatives. A complex path without a useful figure title or nearby explanation remains opaque even when its SVG is technically valid.

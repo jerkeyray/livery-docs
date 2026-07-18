@@ -1,0 +1,22 @@
+---
+title: Themes and icons
+description: Select visual tokens and register trusted vector paths without extending source authority.
+---
+
+Built-in themes include editorial, paper, midnight, blackout, blueprint, and monochrome. Pass the same `theme` to Core, Web, React, or exports.
+
+```tsx
+import { midnightTheme, type IconRegistry } from "@jerkeyray/core";
+
+const icons: IconRegistry = {
+  stripe: ["M3 7h18", "M6 12h12", "M8 17h8"],
+};
+
+<LiveryVisual source={source} theme={midnightTheme} icons={icons} />
+```
+
+An icon registry contains trusted SVG path `d` values supplied by your application. Never populate it with model output. Source can only name registered or canonical glyphs.
+
+Use token overrides for controlled product customization and a full `LiveryTheme` for a reusable visual system. Typography and spacing affect layout; paints and compatible component recipes can often repaint an existing scene.
+
+Theme choice does not bypass accessibility. Test contrast, forced colors, and reduced motion in the surface where the figure is presented.

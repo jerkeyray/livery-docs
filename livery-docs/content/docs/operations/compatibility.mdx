@@ -1,0 +1,34 @@
+---
+title: Compatibility and migration
+description: Distinguish the canonical programmable language from legacy artifacts and deprecated runtime accessors.
+---
+
+## Canonical alpha path
+
+New integrations should use:
+
+- `figure` source and `compileProgram`;
+- `VisualDocument` and `BoardScene`;
+- `render` and `exportVisual`;
+- `mountLiveryVisual`, `LiveryVisual`, and `LiveryChatVisual`;
+- `exportVisualPng` and the CLI;
+- catalog-driven agent and reference helpers.
+
+## Legacy source
+
+Earlier `flow` source is detected and translated through the artifact compiler. Successful translation returns a `compat.legacy_source` warning. Migration preserves meaning where possible, but new language capabilities should not be authored through the legacy grammar.
+
+## Compatibility APIs
+
+Artifact types, `renderHeadless`, `exportHeadless`, generic layout adapters, the old controller, and compatibility layout helpers remain available for earlier consumers. They do not provide the canonical validated `VisualDocument`/`BoardScene` contract.
+
+On a Web visual instance, read `revision.document`, `revision.scene`, and `revision.diagnostics`; the direct getters are deprecated.
+
+## Status vocabulary
+
+- **Supported:** part of the current alpha contract.
+- **Experimental:** usable but subject to additive or shape changes before 1.0.
+- **Unsupported:** explicitly cataloged so agents and tooling can reject it.
+- **Deprecated:** retained for migration and scheduled for eventual removal.
+
+Run source migration and visual regression tests before removing compatibility code.

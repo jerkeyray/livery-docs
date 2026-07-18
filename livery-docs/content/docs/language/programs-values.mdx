@@ -1,0 +1,40 @@
+---
+title: Programs, bindings, and values
+description: Understand declarations, identity, arguments, literals, and semantic tokens.
+---
+
+## Program shape
+
+A file may declare reusable `component` blocks before one `figure`. The figure owns top-level bindings, connectors, constraints, a root layout, and timelines. Multiple figures are rejected.
+
+## Bindings are identity
+
+```livery
+figure identity {
+  gateway = service("Gateway")
+  worker = worker("Worker")
+  dispatch = gateway.right -> worker.left("dispatch")
+  row(gateway, worker, gap: lg)
+}
+```
+
+`gateway`, `worker`, and `dispatch` survive compilation as stable IDs used by diagnostics, timeline operations, SVG patching, and downstream tools. Rename them intentionally.
+
+## Arguments and values
+
+Calls support positional and named arguments. Value types include strings, numbers, booleans, identifiers, tones, paints, lengths, lists, and bounded records. Bare identifiers select enumerated values; quoted values remain text.
+
+```text
+gap: xl
+tone: success
+fill: "#ede9fe"
+width: 180
+```
+
+Semantic tokens such as `$space.lg` and `$radius.lg` resolve through the active theme. The shorthand `lg` is accepted where the call contract defines an enumerated spacing value.
+
+## Comments and labels
+
+Labels are data, not instructions. Keep them concise and use surrounding prose for explanation. Generated labels are escaped during SVG output.
+
+Next: [components](/docs/language/components).

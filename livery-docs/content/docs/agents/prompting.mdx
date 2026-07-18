@@ -1,0 +1,33 @@
+---
+title: Prompting for useful visuals
+description: Specify subject, entities, relationships, and constraints without micromanaging coordinates.
+---
+
+A useful request names four things:
+
+1. **Subject** — what is being explained.
+2. **Entities** — which parts must appear.
+3. **Relationship** — flow, hierarchy, comparison, interaction, or state change.
+4. **Constraint** — density, viewport, grouping, or required emphasis.
+
+```text
+Create one compact figure for a checkout request.
+
+Include the customer, checkout API, payment provider, and orders database.
+Show the primary request left to right. Add states for request, authorization,
+and completion. Keep labels under three words.
+```
+
+## Ask for structure, not pixels
+
+Say “place the client, gateway, worker, and database in a left-to-right flow.” Do not ask for the gateway at `(320, 80)`. Coordinates are appropriate only inside a bounded canvas.
+
+## Keep one visual idea per call
+
+An architecture overview, retry timeline, and transformation chart are three ideas. Split them before generation. Dense scenes increase routing pressure and reduce legibility.
+
+## Use color intentionally
+
+Ask for semantic status or stable categories, not decoration. A good default is one accent family plus success, warning, and danger where meaning requires them.
+
+Next: [validate and repair the proposal](/docs/agents/validation-repair).

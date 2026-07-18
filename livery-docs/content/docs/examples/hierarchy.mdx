@@ -1,0 +1,25 @@
+---
+title: Hierarchy
+description: Express a reporting tree with directed relationships and hierarchy layout.
+---
+
+```livery
+figure organization("Delivery organization") {
+  lead = person("Director")
+  platform = person("Platform lead")
+  product = person("Product lead")
+  runtime = team("Runtime")
+  experience = team("Experience")
+
+  lead_platform = lead.bottom -> platform.top("leads")
+  lead_product = lead.bottom -> product.top("leads")
+  platform_runtime = platform.bottom -> runtime.top("owns")
+  product_experience = product.bottom -> experience.top("owns")
+
+  hierarchy(lead, platform, product, runtime, experience, direction: down, gap: lg, rankGap: xl)
+}
+```
+
+Hierarchy layout treats connectors as tree structure. Keep advisory or cross-cutting relationships semantically distinct so they do not masquerade as parent-child edges.
+
+For compound organizations, group related nodes in frames and connect compatible group heads rather than duplicating members across the root layout.

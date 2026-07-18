@@ -1,0 +1,39 @@
+---
+title: Install from source
+description: Bootstrap the current alpha before public npm packages exist.
+---
+
+<Callout type="warning" title="The packages are not published">
+  `@jerkeyray/core` and the other package names are not currently available from the public npm registry. Use the repository until release status changes.
+</Callout>
+
+```sh
+git clone https://github.com/jerkeyray/livery.git
+cd livery
+bun install
+bun run build
+```
+
+Livery requires Node 22 or newer and uses Bun workspaces for development.
+
+## Try the playground
+
+```sh
+bun run dev
+```
+
+The Vite playground is the fastest local feedback loop for source, diagnostics, themes, responsive widths, and timeline states.
+
+## Consume a workspace package
+
+Until publication, add the package through your monorepo workspace or a pinned repository checkout. Avoid copying `dist` folders by hand: Core, Web, and React are versioned together and should resolve to the same source revision.
+
+## Verify the checkout
+
+```sh
+bun run typecheck
+bun run test
+bun run build
+```
+
+Next: [write a first figure](/docs/start/first-figure).

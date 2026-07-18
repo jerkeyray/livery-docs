@@ -1,0 +1,38 @@
+---
+title: Generation contract
+description: Build a provider-neutral system instruction from the installed compiler version.
+---
+
+```ts
+import { createAgentGuide } from "@jerkeyray/core";
+
+const system = [
+  "You turn technical explanations into one small Livery figure.",
+  createAgentGuide({ mode: "compact" }),
+].join("\n\n");
+```
+
+The built-in contract requires the model to:
+
+- return only Livery source, without Markdown or explanation;
+- produce exactly one `figure`;
+- use stable bindings and concise labels;
+- compose with supported layouts and explicit anchors;
+- stay inside cataloged calls and values;
+- avoid JavaScript, I/O, recursion, arbitrary SVG, and invented properties.
+
+Use `mode: "reference"` for retrieval documents, tool help, offline agents, or difficult repair tasks. Start with compact mode in the hot path.
+
+## Recommended call boundary
+
+```ts
+type GenerateVisual = (input: {
+  system: string;
+  request: string;
+  signal?: AbortSignal;
+}) => Promise<string>;
+```
+
+The application owns provider selection, credentials, cancellation, timeouts, token limits, rate limits, content policy, logging, and cost. Livery owns the language contract, compiler, diagnostics, and repair helpers.
+
+Treat model output as an untrusted string until `render` returns the output your application needs.

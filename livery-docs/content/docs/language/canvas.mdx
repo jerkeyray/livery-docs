@@ -1,0 +1,30 @@
+---
+title: Canvas and primitives
+description: Use coordinates only inside a bounded local drawing surface.
+---
+
+Canvas is for plots, mechanisms, annotated shapes, and small illustrations that cannot be expressed as connected components. Its coordinates are local and its width and height are required.
+
+```livery
+component SignalPlot() {
+  axis = line(x: 24, y: 140, width: 312, stroke: "#64748b")
+  curve = path(d: "M24 120 C90 20 160 20 224 90 S300 150 336 48", fill: "none", stroke: "#7c3aed", strokeWidth: 3)
+  label = text("response", x: 232, y: 34, fontSize: 14)
+  return canvas(width: 360, height: 180) {
+    axis
+    curve
+    label
+  }
+}
+
+figure signal("Signal") {
+  plot = SignalPlot()
+  row(plot)
+}
+```
+
+Public primitives include text, boxes, circles, lines, paths, images, icons, groups, frames, and bounded repeats. Transforms, clipping, masking, paint, and text properties are contract-checked.
+
+Canvas does not make arbitrary SVG safe. Remote images still follow the resource policy, custom icon paths come only from a trusted registry, and repeat counts and path complexity remain bounded.
+
+Next: [styling](/docs/language/styling).

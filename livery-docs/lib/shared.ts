@@ -9,3 +9,10 @@ export const gitConfig = {
   repo: 'livery',
   branch: 'main',
 };
+
+export const docsGitConfig = {
+  user: 'jerkeyray',
+  repo: 'livery-docs',
+  branch: 'main',
+  contentRoot: 'livery-docs/content/docs',
+};

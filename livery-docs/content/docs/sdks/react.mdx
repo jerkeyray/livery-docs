@@ -1,0 +1,36 @@
+---
+title: React
+description: Render controlled source or streamed agent output with retained valid scenes.
+---
+
+Import the component and stylesheet:
+
+```tsx
+import { LiveryVisual } from "@jerkeyray/react";
+import "@jerkeyray/react/styles.css";
+
+export function Figure({ source }: { source: string }) {
+  return <LiveryVisual source={source} responsive />;
+}
+```
+
+Use `LiveryVisual` for complete or application-controlled source. It owns one browser runtime instance, updates it when source changes, and destroys it on unmount.
+
+## Streamed source
+
+```tsx
+import { LiveryChatVisual } from "@jerkeyray/react";
+
+<LiveryChatVisual
+  source={accumulatedSource}
+  streaming={!responseFinished}
+  fallback={<p>Visual unavailable.</p>}
+  onRevision={(revision) => record(revision.status, revision.diagnostics)}
+/>
+```
+
+`LiveryChatVisual` debounces compilation, retains the last valid scene while tokens arrive, and shows the fallback only after final invalid output. Its timeline controls are keyboard accessible and can be automatic, always visible, or hidden.
+
+Use controlled `state` plus `onStateChange` when application navigation owns the timeline. Use `onRevision` for generation telemetry; do not scrape rendered error text.
+
+Next: [streaming agent output](/docs/agents/streaming).

@@ -5,6 +5,7 @@ export const STUDIO_CANVAS_WIDTH = 900;
 export type StudioIntent = 'replace' | 'refine';
 
 export type StudioRequirements = {
+  family?: string;
   nodes: string[];
   groups: string[];
   groupMemberships: Array<{ group: string; members: string[] }>;
@@ -13,6 +14,21 @@ export type StudioRequirements = {
   groupColumns: number | null;
   relationships: Array<{ from: string; to: string; kind: 'reporting' | 'supporting' | 'advisory' }>;
 };
+
+export function classifyVisualFamily(prompt: string) {
+  const value = prompt.toLowerCase();
+  if (/\b(sequence|request[- ]response|interaction narrative|participants? exchange)\b/.test(value)) return 'sequence';
+  if (/\b(state machine|state transition|lifecycle)\b/.test(value)) return 'state-model';
+  if (/\b(class diagram|class model|inheritance|methods? and fields?)\b/.test(value)) return 'class-model';
+  if (/\b(entity relationship|er diagram|database schema|cardinalit(?:y|ies))\b/.test(value)) return 'entity-model';
+  if (/\b(requirements?|verification|traceability|sysml)\b/.test(value)) return 'requirement-model';
+  if (/\b(governance|org(?:anizational)? chart|taxonomy|decision tree|reporting structure|hierarchy)\b/.test(value)) return 'tree-view';
+  if (/\b(gantt|schedule|milestone|duration)\b/.test(value)) return 'schedule';
+  if (/\b(pie|proportion|share of)\b/.test(value)) return 'proportion';
+  if (/\b(line chart|bar chart|area chart|xy plot)\b/.test(value)) return 'xy-plot';
+  if (/\b(architecture|system|platform|service map|cloud)\b/.test(value)) return 'architecture';
+  return 'flowchart';
+}
 
 export type StudioRequirementIssue = {
   code: string;
@@ -24,14 +40,18 @@ export function shouldUseDraftModel(prompt: string, userMessageCount: number) {
   const normalized = prompt.toLowerCase();
   return prompt.length >= 220
     || /\b(create|draw|design|show|visualize|replace|start over)\b/.test(normalized)
-      && /\b(architecture|system|platform|workflow|pipeline|diagram|infographic|governance|org chart|taxonomy|decision tree|hierarchy)\b/.test(normalized)
-    || /\b(group|grouped|areas|boundaries|swimlanes|sections|governance|org chart|taxonomy|decision tree|hierarchy)\b/.test(normalized);
+      && /\b(architecture|system|platform|workflow|pipeline|diagram|infographic|governance|org chart|taxonomy|decision tree|hierarchy|sequence|interaction|state machine|class model|database schema|requirements?)\b/.test(normalized)
+    || /\b(group|grouped|areas|boundaries|swimlanes|sections|governance|org chart|taxonomy|decision tree|hierarchy|sequence|interaction|state machine|class model|database schema|requirements?)\b/.test(normalized);
 }
 
 export function validateRequirementPlan(requirements: StudioRequirements, prompt: string): StudioRequirementIssue[] {
   const issues: StudioRequirementIssue[] = [];
   const complex = prompt.length >= 220;
   const asksForGroups = /\b(group|grouped|areas|boundaries|swimlanes|sections|divisions?|schools?)\b/i.test(prompt);
+  const expectedFamily = classifyVisualFamily(prompt);
+  if (requirements.family && requirements.family !== expectedFamily) {
+    issues.push({ code: 'requirements.visual_family_mismatch', message: `This request is classified as ${expectedFamily}, not ${requirements.family}.` });
+  }
 
   if (complex && requirements.nodes.length < 5) {
     issues.push({ code: 'requirements.nodes_incomplete', message: 'This detailed request needs at least five required nodes in the generation plan.' });
@@ -146,6 +166,28 @@ export function validateSemanticRequirements(document: VisualDocument, requireme
   }
   if (/\b(hierarchy|governance|org(?:anizational)? chart|taxonomy|decision tree|reporting structure)\b/i.test(prompt) && document.root.layout?.kind !== 'hierarchy') {
     issues.push({ code: 'semantic.required_hierarchy_layout_missing', message: 'This reporting structure must use hierarchy(...) for the outer composition.' });
+  }
+  if ((requirements.family === 'sequence' || classifyVisualFamily(prompt) === 'sequence') && document.root.layout?.kind !== 'interaction') {
+    issues.push({ code: 'semantic.required_interaction_layout_missing', message: 'An ordered participant narrative must use interaction(...) for native lifelines and message rows.' });
+  }
+  const family = requirements.family ?? classifyVisualFamily(prompt);
+  if (family === 'sequence') {
+    const participants = nodes.filter(({ kind }) => kind === 'lib.participant');
+    const messages = document.connectors.filter(({ semantic }) => semantic === 'message');
+    if (participants.length < 2) issues.push({ code: 'semantic.interaction_participants_missing', message: 'An interaction narrative needs at least two participant(...) components.' });
+    if (!messages.length) issues.push({ code: 'semantic.interaction_messages_missing', message: 'An interaction narrative needs ordered semantic message connectors.' });
+    const orders = messages.map(({ order }) => order).filter((order): order is number => order !== undefined).sort((a, b) => a - b);
+    if (orders.length !== messages.length || orders.some((order, index) => order !== index)) issues.push({ code: 'semantic.interaction_order_invalid', message: 'Interaction message order must be explicit, unique, and contiguous from zero.' });
+  }
+  if (family === 'class-model' && !nodes.some(({ kind }) => kind === 'lib.classCard')) issues.push({ code: 'semantic.class_cards_missing', message: 'A class model must use classCard(...) with structured fields or methods.' });
+  if (family === 'entity-model' && !nodes.some(({ kind }) => kind === 'lib.entity')) issues.push({ code: 'semantic.entities_missing', message: 'An entity model must use entity(...) with structured fields.' });
+  if (family === 'state-model') {
+    if (!nodes.some(({ kind }) => kind === 'lib.stateNode')) issues.push({ code: 'semantic.states_missing', message: 'A state model must use stateNode(...) components.' });
+    if (!document.connectors.some(({ semantic }) => semantic === 'transition')) issues.push({ code: 'semantic.transitions_missing', message: 'A state model must use transition-semantic connectors.' });
+  }
+  if (family === 'requirement-model') {
+    if (!nodes.some(({ kind }) => kind === 'lib.requirement')) issues.push({ code: 'semantic.requirements_missing', message: 'A requirement model must use requirement(...) components.' });
+    if (!document.connectors.some(({ semantic }) => semantic === 'trace' || semantic === 'verify' || semantic === 'satisfy')) issues.push({ code: 'semantic.traceability_missing', message: 'A requirement model needs trace, verify, or satisfy relationships.' });
   }
 
   for (const label of requirements.nodes) {

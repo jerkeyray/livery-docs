@@ -1,0 +1,34 @@
+---
+title: Layouts and frames
+description: Compose responsive scenes without board-level coordinates.
+---
+
+Every figure has one root layout. Use the layout that matches the meaning of the figure:
+
+| Layout | Best for |
+| --- | --- |
+| `row`, `column`, `grid` | Predictable geometric composition. |
+| `flow` | Connected systems and data paths. |
+| `hierarchy` | Reporting trees and taxonomies. |
+| `interaction` | Stable participants with ordered messages. |
+| `stack`, `overlay` | Shared regions and layered emphasis. |
+| `canvas` | Bounded local coordinates. |
+
+```livery
+figure grouped("Deployment") {
+  edge = frame("Edge", layout: column, gap: md) {
+    gateway = service("Gateway")
+    cache = database("Cache")
+  }
+  origin = service("Origin")
+
+  fetch = edge.gateway.right -> origin.left("miss")
+  row(edge, origin, gap: xl)
+}
+```
+
+Frames add a labeled boundary and an internal layout. Nested bindings receive qualified identities such as `edge.gateway`; connectors can target those identities or a compatible group boundary.
+
+`gap`, `rankGap`, direction, alignment, distribution, columns, and bounded candidate counts tune intent. Fixed top-level coordinates are intentionally absent.
+
+Next: [constraints](/docs/language/constraints).

@@ -1,0 +1,35 @@
+---
+title: VisualDocument and BoardScene
+description: Separate authored meaning from width-specific solved geometry.
+---
+
+## `VisualDocument`
+
+The document contains:
+
+- a versioned root visual tree;
+- stable node properties and nested identity;
+- connector endpoints and semantic metadata;
+- root and nested layout intent;
+- relational constraints;
+- timelines and transitions.
+
+It is portable and independent of a viewport. Custom components have already expanded by this boundary.
+
+## `BoardScene`
+
+The scene contains width-specific geometry:
+
+- measured element bounds and hierarchy;
+- routed connector paths and labels;
+- bounded canvas primitives;
+- layout adapter and attempt metadata;
+- accessibility text and rendering identity.
+
+The same `BoardScene` feeds SVG, timeline presentation, JSON export, and browser updates. PNG starts from its validated SVG rather than running a separate drawing engine.
+
+## Why both types matter
+
+Tooling that only needs semantic inspection should stop at the document. Renderers and exporters require a valid scene. Keeping the boundary explicit allows the solver to re-run at another width without changing source identity or component expansion.
+
+Do not persist internal candidate objects as a public artifact. Persist source, and export documented scene JSON only when downstream tooling needs solved geometry.

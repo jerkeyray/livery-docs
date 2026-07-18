@@ -1,0 +1,32 @@
+---
+title: Connectors
+description: Relate stable bindings through explicit anchors and semantic metadata.
+---
+
+A connector is a first-class binding. Connect explicit anchors rather than asking the router to infer which side you meant.
+
+```livery
+figure messages {
+  producer = service("Producer")
+  queue = queue("Jobs")
+  consumer = worker("Consumer")
+
+  publish = connect(producer.right, queue.left, label: "publish", variant: async)
+  deliver = connect(queue.right, consumer.left, label: "deliver", role: primary)
+
+  flow(producer, queue, consumer, direction: right, gap: lg, rankGap: xl)
+}
+```
+
+The arrow form is concise; `connect()` exposes the full named contract. Anchors are `top`, `right`, `bottom`, `left`, and `center` where supported.
+
+## Metadata
+
+- `variant` describes visual relationship behavior such as directional, bidirectional, asynchronous, data, or advisory.
+- `role` distinguishes primary, secondary, and supporting structure for layout and emphasis.
+- `tone` communicates semantic status.
+- Diagram-family metadata such as cardinality, message kind, order, bundles, and semantics is accepted only in compatible contexts.
+
+Unknown endpoints, duplicate connector IDs, incompatible metadata, and targets outside the returned visual tree produce diagnostics.
+
+Next: [layouts and frames](/docs/language/layouts-frames).

@@ -3,6 +3,7 @@ import { compileProgram } from '@jerkeyray/core';
 import {
   createRequirementRepairPrompt,
   createStudioCompilerRepairPrompt,
+  classifyVisualFamily,
   shouldUseDraftModel,
   validateRequirementPlan,
   validateSemanticRequirements,
@@ -22,6 +23,39 @@ const source = `figure checkout("Checkout") {
 }`;
 
 describe('Studio generation contract', () => {
+  test('classifies original visual families before drafting', () => {
+    expect(classifyVisualFamily('Show a request-response sequence between a client and API.')).toBe('sequence');
+    expect(classifyVisualFamily('Model account and invoice cardinalities in a database schema.')).toBe('entity-model');
+    expect(classifyVisualFamily('Draw an order lifecycle state machine.')).toBe('state-model');
+    expect(classifyVisualFamily('Map requirements to verification evidence.')).toBe('requirement-model');
+  });
+
+  test('requires the native interaction kernel for ordered participant narratives', () => {
+    const requirements = {
+      family: 'sequence',
+      nodes: ['Client', 'API'],
+      groups: [],
+      groupMemberships: [],
+      groupHeads: [],
+      peerGroups: false,
+      groupColumns: null,
+      relationships: [{ from: 'Client', to: 'API', kind: 'reporting' }],
+    };
+    const wrong = compileProgram(`figure exchange { client = participant("Client") api = participant("API") request = connect(client.right, api.left, semantic: message, order: 0) row(client, api) }`);
+    expect(validateSemanticRequirements(wrong.document, requirements, 'Show a request-response sequence.').map(({ code }) => code)).toContain('semantic.required_interaction_layout_missing');
+    const correct = compileProgram(`figure exchange { client = participant("Client") api = participant("API") request = connect(client.right, api.left, semantic: message, order: 0) interaction(client, api) }`);
+    expect(validateSemanticRequirements(correct.document, requirements, 'Show a request-response sequence.')).toEqual([]);
+  });
+
+  test('rejects visually plausible but semantically empty schema and behavior drafts', () => {
+    const base = { nodes: [], groups: [], groupMemberships: [], groupHeads: [], peerGroups: false, groupColumns: null, relationships: [] };
+    const cards = compileProgram(`figure model { a = card("Account") b = card("Invoice") edge = connect(a.right, b.left) flow(a, b) }`);
+    expect(validateSemanticRequirements(cards.document, { ...base, family: 'entity-model' }, 'Show an entity relationship model.').map(({ code }) => code)).toContain('semantic.entities_missing');
+    expect(validateSemanticRequirements(cards.document, { ...base, family: 'state-model' }, 'Show an order state machine.').map(({ code }) => code)).toEqual(expect.arrayContaining(['semantic.states_missing', 'semantic.transitions_missing']));
+    expect(validateSemanticRequirements(cards.document, { ...base, family: 'requirement-model' }, 'Show requirement verification.').map(({ code }) => code)).toEqual(expect.arrayContaining(['semantic.requirements_missing', 'semantic.traceability_missing']));
+  });
+
+
   test('uses the stronger model for first drafts and complex replacements', () => {
     expect(shouldUseDraftModel('Make Stripe purple.', 1)).toBe(true);
     expect(shouldUseDraftModel('Make Stripe purple.', 3)).toBe(false);

@@ -1,5 +1,5 @@
 import { openai } from '@ai-sdk/openai';
-import { builtInThemes, compileVisual, createAgentGuide, createRepairPrompt, getBuiltInTheme, render, type BuiltInThemeName } from '@jerkeyray/core';
+import { builtInThemes, compileVisual, createAgentGuide, createRepairPrompt, getBuiltInTheme, getLanguageCatalog, render, type BuiltInThemeName } from '@jerkeyray/core';
 import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage } from 'ai';
 import { z } from 'zod';
 import {
@@ -24,10 +24,12 @@ const editModel = process.env.LIVERY_STUDIO_MODEL ?? 'gpt-5.4-nano';
 const draftModel = process.env.LIVERY_STUDIO_DRAFT_MODEL ?? 'gpt-5.4-mini';
 const fallbackModel = process.env.LIVERY_STUDIO_FALLBACK_MODEL ?? 'gpt-5.4-mini';
 const compilerCompatibilityError = getCompilerCompatibilityError();
+const visualFamilyIds = getLanguageCatalog().families.map(({ id }) => id) as [string, ...string[]];
 
 const submitLiveryInput = z.object({
   intent: z.enum(['replace', 'refine']).describe('Replace for a fundamentally different diagram; refine for a local edit to the current diagram.'),
   requirements: z.object({
+    family: z.enum(visualFamilyIds).describe('The single primary semantic family selected before drafting. Mixed figures use the family that determines the outer reading order.'),
     nodes: z.array(z.string().min(1).max(60)).min(1).max(32).describe('Every explicitly requested node label that must appear.'),
     groups: z.array(z.string().min(1).max(60)).max(12).describe('Every explicitly requested frame or subsystem label that must appear.'),
     groupMemberships: z.array(z.object({
@@ -201,10 +203,16 @@ function getCompilerCompatibilityError() {
     reporting = connect(board.bottom, leader.top, role: primary)
     hierarchy(board, leader, direction: down)
   }`);
-  const errors = [...probe.diagnostics, ...hierarchyProbe.diagnostics].filter(({ severity }) => severity === 'error');
-  if (errors.length === 0 && probe.document?.root.layout?.kind === 'flow' && hierarchyProbe.document?.root.layout?.kind === 'hierarchy') return null;
+  const interactionProbe = compileVisual(`figure studio_interaction_probe {
+    client = participant("Client")
+    api = participant("API")
+    request = connect(client.right, api.left, semantic: message, messageKind: sync, order: 0)
+    interaction(client, api)
+  }`);
+  const errors = [...probe.diagnostics, ...hierarchyProbe.diagnostics, ...interactionProbe.diagnostics].filter(({ severity }) => severity === 'error');
+  if (errors.length === 0 && probe.document?.root.layout?.kind === 'flow' && hierarchyProbe.document?.root.layout?.kind === 'hierarchy' && interactionProbe.document?.root.layout?.kind === 'interaction') return null;
   const details = errors.map(({ code, message }) => `[${code}] ${message}`).join(' | ');
-  return `Studio loaded an incompatible Livery compiler without native flow and hierarchy support. Restart the docs dev server.${details ? ` ${details}` : ''}`;
+  return `Studio loaded an incompatible Livery compiler without native flow, hierarchy, and interaction support. Restart the docs dev server.${details ? ` ${details}` : ''}`;
 }
 
 function createStudioInstructions(currentSource: string, theme: BuiltInThemeName) {
@@ -213,6 +221,7 @@ function createStudioInstructions(currentSource: string, theme: BuiltInThemeName
     "Turn the user's request into a clear, restrained technical visual using the Livery DSL.",
     'For follow-up requests, modify the current source and preserve unrelated structure and labels.',
     'Classify the request before writing source. Use intent replace when the user asks for a fundamentally different system or says to start over. Use intent refine for additions, removals, renames, styling, or rearrangement of the current diagram.',
+    'Select requirements.family before drafting. Sequence and interaction narratives use sequence; state machines use state-model; class and ER schemas use class-model or entity-model; requirements traceability uses requirement-model; reporting trees use tree-view; connected systems use architecture or flowchart.',
     'For replace, rebuild the figure around the new request; do not retain unrelated nodes merely because they exist in the current source.',
     'In submit_livery, list every explicitly requested node, group, group membership, group head, and relationship in requirements. Nodes and groups are disjoint: never list the same label in both, and never create a duplicate card with a frame label merely to receive a connector. A group head names its visible leader; use null when the request names no leader and the relationship should terminate at the frame’s implicit hierarchy pin. groupMemberships may contain node labels or nested group labels; use them only for literal “contains”, “has”, or “belongs inside” requirements. Words such as “above”, “under”, “reports to”, “leads”, and “followed by” are reporting relationships and require connectors; never encode them by nesting entity frames. People, boards, councils, and named roles are nodes/cards, never groups/frames. Never duplicate containment as a reporting relationship from a frame to its own member. For a hierarchy, every top-level sibling group needs one incoming reporting relationship, and a named group head needs reporting relationships to each nested subgroup. Classify structural and main-path relationships as reporting, side effects and dependencies such as payment or storage as supporting, and only non-reporting advice or consultation as advisory. Mark peerGroups true for the requested top-level sibling groups; nested groups must be listed as members of their parent group and are not top-level peers. Set groupColumns only when the user explicitly asks for an N-column grid; otherwise it must be null. This is an acceptance contract: never omit, invent, or weaken a requirement to make validation pass.',
     'For long detailed requests, include at least five required nodes and three required relationships. If grouping is requested, name every requested group.',
@@ -222,7 +231,9 @@ function createStudioInstructions(currentSource: string, theme: BuiltInThemeName
     'Compose for reading order, not merely for geometric validity. The main flow should move left-to-right or top-to-bottom without backtracking.',
     'For connected architectures and workflows, use flow(..., direction: auto) so the native solver owns ranking, responsive reflow, and routing. Mark the main reading spine with role: primary, meaningful branches secondary, and side effects supporting.',
     'For governance diagrams, organizational charts, taxonomies, reporting structures, and decision trees, use hierarchy(..., direction: down). Use role: primary or secondary for structural reporting edges. Use variant: advisory for contextual relationships; advisory lines are dotted, arrowless, and do not affect ranks.',
-    'Never model row, column, stack, flow, or hierarchy as components. They are layout calls only.',
+    'For ordered participant interactions, use participant(...) cards, connect(..., semantic: message, messageKind: sync|async|return, order: N), and one interaction(...) root layout. Message order must be contiguous from zero.',
+    'For schemas, use entity(..., fields: [{ name, type, key? }]) and classCard(..., fields: [...], methods: [{ name, signature?, returns? }]). Use connector semantic values for association, inheritance, composition, aggregation, dependency, transition, trace, verify, and satisfy; cardinalities belong only on schema relationships.',
+    'Never model row, column, stack, flow, hierarchy, or interaction as components. They are layout calls only.',
     'Frames are quiet containers and do not accept variant or tone. Style the cards inside them. In a taxonomy, ranks and named taxa are cards unless the user explicitly asks for visual group regions.',
     'Never connect a frame structurally to one of its own descendants. Connect the external parent to the frame implicit head, or connect a named leader inside the frame to sibling subgroups.',
     'In a hierarchy, a frame containing a named leader and sibling subgroup frames should use layout: hierarchy. Leaf groups containing descriptive members may use layout: column.',

@@ -1,0 +1,23 @@
+---
+title: Request flow
+description: Model a primary request with supporting persistence and an asynchronous side path.
+---
+
+```livery
+figure checkout("Checkout request") {
+  customer = person("Customer")
+  api = service("Checkout API")
+  payment = service("Payment")
+  orders = database("Orders")
+
+  submit = connect(customer.right, api.left, label: "submit", role: primary)
+  authorize = connect(api.right, payment.left, label: "authorize", role: primary)
+  persist = connect(api.bottom, orders.top, label: "persist", role: supporting, tone: success)
+
+  flow(customer, api, payment, orders, direction: right, gap: lg, rankGap: xl)
+}
+```
+
+Use `flow` when the connectors carry the reading order. `role: primary` distinguishes the main path from supporting work without relying only on color.
+
+Test this family at the narrowest product width because the solver may change direction or routing to preserve geometry.

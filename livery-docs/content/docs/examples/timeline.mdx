@@ -1,0 +1,38 @@
+---
+title: Stateful request timeline
+description: Reveal and trace one request without rebuilding the base scene.
+---
+
+```livery
+figure cache("Cache lookup") {
+  client = browser("Client")
+  cache = database("Cache")
+  origin = service("Origin")
+
+  lookup = client.right -> cache.left("lookup")
+  miss = cache.right -> origin.left("miss")
+  fill = origin.left -> cache.right("fill", tone: success)
+
+  row(client, cache, origin, gap: xl)
+
+  timeline lookup {
+    state request {
+      show(client, cache)
+      trace(lookup)
+    }
+    state miss {
+      show(origin)
+      trace(miss)
+      focus(origin)
+    }
+    state fill {
+      trace(fill)
+      focus(cache)
+    }
+    transition request -> miss(duration: fast)
+    transition miss -> fill(duration: normal)
+  }
+}
+```
+
+The scene is solved once. Timeline states change visibility, focus, and trace presentation while retaining stable geometry.

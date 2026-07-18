@@ -1,0 +1,4 @@
+{
+  "title": "Architecture",
+  "pages": ["index", "compiler", "document-scene", "layout-validation", "runtime-exports", "packages-extensions"]
+}

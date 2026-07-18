@@ -1,0 +1,44 @@
+---
+title: Components
+description: Use the standard library or compose reusable visual structures from public primitives.
+---
+
+The standard library includes people, browsers, services, APIs, workers, databases, queues, streams, agents, tools, models, documents, callouts, and other technical vocabulary.
+
+```livery
+figure components {
+  user = person("Operator")
+  agent = agent("Research agent")
+  model = model("Reasoning model")
+
+  ask = user.right -> agent.left("ask")
+  infer = agent.right -> model.left("infer")
+  row(user, agent, model, gap: xl)
+}
+```
+
+Library components expand into the same public primitives available to authored components. They are conveniences, not compiler-level entity types.
+
+## Author a reusable component
+
+```livery
+component Pair(left: string, right: string = "Worker") {
+  first = box(left)
+  second = box(right)
+  return row(gap: lg) {
+    first
+    second
+  }
+}
+
+figure reusable {
+  pair = Pair("Client", "API")
+  row(pair)
+}
+```
+
+Parameters support the bounded types listed in the [generated reference](/docs/reference/standard-library). Expansion has depth and node limits, and recursive component expansion is rejected.
+
+Use `lib.service(label: "API")` when an explicit library namespace improves generated-source clarity; direct `service("API")` calls are equivalent conveniences.
+
+Next: [connectors](/docs/language/connectors).

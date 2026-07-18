@@ -1,0 +1,30 @@
+---
+title: The Livery language
+description: One bounded visual language for human authors and generating agents.
+---
+
+A Livery file declares reusable components and exactly one canonical `figure`. Inside it, bindings create stable identities, connectors relate anchored elements, and one root layout describes the composition.
+
+```livery
+figure checkout("Checkout") {
+  customer = person("Customer")
+  api = service("Checkout API")
+  payment = service("Payment provider")
+
+  submit = customer.right -> api.left("submit")
+  authorize = api.right -> payment.left("authorize")
+
+  row(customer, api, payment, gap: xl)
+}
+```
+
+## Learn in layers
+
+<Cards>
+  <Card title="Programs and values" description="Declarations, bindings, arguments, tokens, and stable identity." href="/docs/language/programs-values" />
+  <Card title="Components" description="Standard-library calls and reusable authored components." href="/docs/language/components" />
+  <Card title="Connectors and layout" description="Explicit anchors plus coordinate-free composition." href="/docs/language/connectors" />
+  <Card title="Canvas and timelines" description="Bounded local geometry and state-based explanations." href="/docs/language/canvas" />
+</Cards>
+
+For exact parameters and status flags, use the [compiler-generated reference](/docs/reference/standard-library).

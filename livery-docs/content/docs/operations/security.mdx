@@ -1,0 +1,30 @@
+---
+title: Security and limits
+description: Understand language sandboxing, resource policy, prompt boundaries, and application responsibilities.
+---
+
+Livery source does not execute JavaScript, perform I/O, mutate application state, recurse without bounds, or expose arbitrary SVG as the main authoring surface.
+
+## Resource defaults
+
+```ts
+const resourcePolicy = {
+  allowDataImages: true,
+  allowedImageHosts: [],
+  maxDataImageBytes: 256 * 1024,
+};
+```
+
+Remote images require exact HTTPS host allowlisting. Keep the list narrow. PNG export validates resources before handing SVG to Resvg.
+
+## Bounded work
+
+Compilation caps nesting, expanded nodes, paths, text, states, transitions, repeats, and images. Agent integration should add request-size, source-size, conversation, retry, timeout, concurrency, and rate limits.
+
+## Trusted application inputs
+
+Themes, token overrides, custom icon path registries, provider credentials, and host policies come from application code—not model output. Labels and comments are untrusted data and are escaped in SVG and isolated in repair prompts.
+
+## Outside Livery’s boundary
+
+Livery does not authenticate users, authorize model tools, sanitize the surrounding assistant response, secure a provider key, or implement distributed rate limiting. Those controls belong to the hosting application.

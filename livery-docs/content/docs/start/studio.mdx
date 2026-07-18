@@ -1,0 +1,16 @@
+---
+title: Studio
+description: Generate, inspect, repair, and export a visual in the hosted documentation workspace.
+---
+
+[Open Studio](/studio) to describe a visual in chat and inspect the accepted Livery source beside its rendered scene.
+
+Studio is a demonstration of the production loop:
+
+1. Turn an intent into a constrained visual plan.
+2. Ask a model for Livery source only.
+3. Compile and validate that source.
+4. Repair invalid output with diagnostics.
+5. Keep the last accepted source and allow export.
+
+Studio is not part of the runtime packages and its model route is not a hosted API for other applications. Build your own provider integration using the [agent contract](/docs/agents/contract) and [repair loop](/docs/agents/validation-repair).

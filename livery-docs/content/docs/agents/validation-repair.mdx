@@ -1,0 +1,40 @@
+---
+title: Validation and repair
+description: Accept only valid output, apply exact compiler edits first, and bound model retries.
+---
+
+```ts
+import { applyDiagnosticFix, createAgentGuide, createRepairPrompt, render } from "@jerkeyray/core";
+
+const guide = createAgentGuide({ mode: "compact" });
+
+export async function generateVisual(request: string) {
+  let source = await callModel({ system: guide, user: request });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const result = render(source, { width: 720 });
+    if (result.svg) return { source, ...result };
+
+    const exact = result.diagnostics
+      .map((diagnostic) => applyDiagnosticFix(source, diagnostic))
+      .find(Boolean);
+    if (exact) {
+      source = exact;
+      continue;
+    }
+
+    source = await callModel({
+      system: guide,
+      user: createRepairPrompt(source, result.diagnostics),
+    });
+  }
+
+  throw new Error("No valid visual was produced.");
+}
+```
+
+The three-attempt limit is an example. Keep it small and record failure codes by attempt. A repair should preserve the visual idea and change only what diagnostics require.
+
+`createRepairPrompt` bounds diagnostic count, known IDs, source excerpts, context lines, and line length. It also tells the model that labels and comments are data rather than instructions.
+
+Never accept source because it “looks plausible.” Check `svg`, `scene`, or `document` according to the boundary your application requires.

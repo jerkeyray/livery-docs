@@ -1,0 +1,25 @@
+---
+title: Responsive behavior
+description: Re-solve one source across chat, content, and expanded widths.
+---
+
+Responsiveness means multiple deterministic solves, not scaling one SVG until labels become unreadable.
+
+```ts
+for (const width of [360, 720, 1200]) {
+  const result = exportVisual(source, { format: "svg", width });
+  if (result.output) await save(`figure-${width}.svg`, result.output);
+}
+```
+
+`LiveryVisual responsive` and the default Web runtime use `ResizeObserver` when no explicit width is provided. Container changes trigger a new solve. Pass a fixed width for server export, tests, or environments without `ResizeObserver`.
+
+Design source for meaning across widths:
+
+- Prefer semantic layouts over fixed dimensions.
+- Keep labels short.
+- Split visuals with more than one explanatory idea.
+- Test at 360, 720, and 1200 pixels.
+- Treat a narrow-width geometry failure as an authoring signal, not permission to shrink text indefinitely.
+
+See the [responsive gallery](/docs/examples/responsive).

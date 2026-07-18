@@ -1,0 +1,46 @@
+---
+title: CLI and exports
+description: Produce deterministic SVG, scene JSON, and PNG from one solved scene.
+---
+
+## Programmatic exports
+
+```ts
+import { exportVisual } from "@jerkeyray/core";
+
+const result = exportVisual(source, {
+  format: "svg",
+  width: 720,
+});
+
+if (!result.output) throw new Error(format(result.diagnostics));
+```
+
+JSON output includes the document, diagnostics, solved scene, validation report, and layout attempts when present.
+
+For PNG in Node or Bun:
+
+```ts
+import { exportVisualPng } from "@jerkeyray/export-node";
+
+const result = exportVisualPng(source, {
+  width: 720,
+  scale: 2,
+  background: "#ffffff",
+});
+```
+
+PNG uses Resvg and returns `Uint8Array`. Resource validation happens before rasterization.
+
+## CLI
+
+```sh
+livery diagram.livery --output diagram.svg
+livery diagram.livery --output diagram.png --scale 2
+livery diagram.livery --format json --pretty --output diagram.json
+cat diagram.livery | livery - --format svg
+```
+
+The CLI infers format from the output extension, writes diagnostics to stderr, and exits unsuccessfully when it cannot produce the requested output.
+
+An export has one solved width. Generate each responsive asset deliberately; see [responsive behavior](/docs/sdks/responsive).
