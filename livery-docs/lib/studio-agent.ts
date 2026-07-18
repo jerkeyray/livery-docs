@@ -8,9 +8,10 @@ export type StudioRequirements = {
   nodes: string[];
   groups: string[];
   groupMemberships: Array<{ group: string; members: string[] }>;
+  groupHeads: Array<{ group: string; head: string | null }>;
   peerGroups: boolean;
   groupColumns: number | null;
-  relationships: Array<{ from: string; to: string }>;
+  relationships: Array<{ from: string; to: string; kind: 'reporting' | 'supporting' | 'advisory' }>;
 };
 
 export type StudioRequirementIssue = {
@@ -23,14 +24,14 @@ export function shouldUseDraftModel(prompt: string, userMessageCount: number) {
   const normalized = prompt.toLowerCase();
   return prompt.length >= 220
     || /\b(create|draw|design|show|visualize|replace|start over)\b/.test(normalized)
-      && /\b(architecture|system|platform|workflow|pipeline|diagram|infographic)\b/.test(normalized)
-    || /\b(group|grouped|areas|boundaries|swimlanes|sections)\b/.test(normalized);
+      && /\b(architecture|system|platform|workflow|pipeline|diagram|infographic|governance|org chart|taxonomy|decision tree|hierarchy)\b/.test(normalized)
+    || /\b(group|grouped|areas|boundaries|swimlanes|sections|governance|org chart|taxonomy|decision tree|hierarchy)\b/.test(normalized);
 }
 
 export function validateRequirementPlan(requirements: StudioRequirements, prompt: string): StudioRequirementIssue[] {
   const issues: StudioRequirementIssue[] = [];
   const complex = prompt.length >= 220;
-  const asksForGroups = /\b(group|grouped|areas|boundaries|swimlanes|sections)\b/i.test(prompt);
+  const asksForGroups = /\b(group|grouped|areas|boundaries|swimlanes|sections|divisions?|schools?)\b/i.test(prompt);
 
   if (complex && requirements.nodes.length < 5) {
     issues.push({ code: 'requirements.nodes_incomplete', message: 'This detailed request needs at least five required nodes in the generation plan.' });
@@ -41,7 +42,10 @@ export function validateRequirementPlan(requirements: StudioRequirements, prompt
   if (asksForGroups && requirements.groups.length === 0) {
     issues.push({ code: 'requirements.groups_incomplete', message: 'The user requested grouping, but the generation plan does not name any required groups.' });
   }
-  const asksForPeerGroups = /\bgroup(?: it)? into\b|\b(?:separate|distinct) (?:areas|groups|frames|sections)\b/i.test(prompt);
+  const asksForPeerGroups =
+    /\bgroup(?: it)? into\b|\b(?:separate|distinct) (?:areas|groups|frames|sections)\b|\bsibling (?:areas|groups|frames|sections|divisions?|schools?)\b/i.test(
+      prompt,
+    );
   if (asksForPeerGroups && requirements.groups.length > 1 && !requirements.peerGroups) {
     issues.push({ code: 'requirements.peer_groups_incomplete', message: 'The user divided the system into peer areas, so peerGroups must be true.' });
   }
@@ -55,21 +59,77 @@ export function validateRequirementPlan(requirements: StudioRequirements, prompt
   }
   const requiredNodes = new Set(requirements.nodes.map(normalize));
   const requiredGroups = new Set(requirements.groups.map(normalize));
+  const requiredEndpoints = new Set([...requiredNodes, ...requiredGroups]);
+  const hierarchyRequested = /\b(hierarchy|governance|org(?:anizational)? chart|taxonomy|decision tree|reporting structure)\b/i.test(prompt);
+  for (const label of requirements.nodes) if (requiredGroups.has(normalize(label))) {
+    issues.push({
+      code: 'requirements.entity_group_overlap',
+      message: `“${label}” cannot be both a node and a group. Keep the frame in groups and use its named leader as groupHead, or null for the frame's implicit hierarchy pin.`,
+    });
+  }
   for (const membership of requirements.groupMemberships) {
     if (!requiredGroups.has(normalize(membership.group))) {
       issues.push({ code: 'requirements.membership_group_missing', message: `Membership group “${membership.group}” must also be listed as a required group.` });
     }
-    for (const member of membership.members) if (!requiredNodes.has(normalize(member))) {
-      issues.push({ code: 'requirements.membership_node_missing', message: `Group member “${member}” must also be listed as a required node.` });
+    for (const member of membership.members) if (!requiredEndpoints.has(normalize(member))) {
+      issues.push({ code: 'requirements.membership_endpoint_missing', message: `Group member “${member}” must also be listed as a required node or nested group.` });
+    } else if (normalize(member) === normalize(membership.group)) {
+      issues.push({ code: 'requirements.membership_self_reference', message: `Group “${membership.group}” cannot contain itself.` });
+    }
+  }
+  for (const groupHead of requirements.groupHeads ?? []) {
+    if (!requiredGroups.has(normalize(groupHead.group))) {
+      issues.push({ code: 'requirements.group_head_group_missing', message: `Group head “${groupHead.group}” must also be listed as a required group.` });
+    }
+    if (groupHead.head !== null && !requiredNodes.has(normalize(groupHead.head))) {
+      issues.push({ code: 'requirements.group_head_node_missing', message: `Named group head “${groupHead.head}” must also be listed as a required node.` });
     }
   }
   for (const relationship of requirements.relationships) {
     for (const endpoint of [relationship.from, relationship.to]) {
-      if (!requiredNodes.has(normalize(endpoint))) {
+      if (!requiredEndpoints.has(normalize(endpoint))) {
         issues.push({
           code: 'requirements.relationship_endpoint_missing',
-          message: `Relationship endpoint “${endpoint}” must also be listed as a required node.`,
+          message: `Relationship endpoint “${endpoint}” must also be listed as a required node or group.`,
         });
+      }
+    }
+    const ownMembership = requirements.groupMemberships.find(({ group }) => normalize(group) === normalize(relationship.from));
+    if ((relationship.kind ?? 'reporting') === 'reporting' && ownMembership?.members.some((member) => normalize(member) === normalize(relationship.to))) {
+      issues.push({
+        code: 'requirements.frame_descendant_relationship_invalid',
+        message: `Containment “${relationship.from} contains ${relationship.to}” belongs only in groupMemberships. Do not add a reporting relationship from a frame to its own member; use a named leader when one exists.`,
+      });
+    }
+  }
+  if (hierarchyRequested) {
+    const reporting = requirements.relationships.filter(({ kind }) => kind === 'reporting');
+    if (!reporting.length) {
+      issues.push({ code: 'requirements.reporting_relationships_missing', message: 'A hierarchy needs explicit reporting relationships; containment and advisory links cannot replace its reporting tree.' });
+    }
+    const nestedGroups = new Set(requirements.groupMemberships.flatMap(({ members }) => members).map(normalize).filter((member) => requiredGroups.has(member)));
+    const topLevelGroups = requirements.groups.filter((group) => !nestedGroups.has(normalize(group)));
+    if (requirements.peerGroups) for (const group of topLevelGroups) {
+      if (!reporting.some(({ to }) => normalize(to) === normalize(group))) {
+        issues.push({ code: 'requirements.peer_group_reporting_parent_missing', message: `Sibling hierarchy group “${group}” needs one incoming reporting relationship from its parent entity.` });
+      }
+    }
+    for (const groupHead of requirements.groupHeads ?? []) {
+      if (!groupHead.head) continue;
+      const membership = requirements.groupMemberships.find(({ group }) => normalize(group) === normalize(groupHead.group));
+      for (const subgroup of membership?.members.filter((member) => requiredGroups.has(normalize(member))) ?? []) {
+        if (!reporting.some(({ from, to }) => normalize(from) === normalize(groupHead.head!) && normalize(to) === normalize(subgroup))) {
+          issues.push({ code: 'requirements.group_head_reporting_missing', message: `Group head “${groupHead.head}” must report to nested hierarchy group “${subgroup}”.` });
+        }
+      }
+    }
+    const contained = new Set(requirements.groupMemberships.flatMap(({ members }) => members).map(normalize));
+    const reportingEndpoints = new Set(reporting.flatMap(({ from, to }) => [normalize(from), normalize(to)]));
+    const advisoryEndpoints = new Set(requirements.relationships.filter(({ kind }) => kind === 'advisory').flatMap(({ from, to }) => [normalize(from), normalize(to)]));
+    for (const node of requirements.nodes) {
+      const normalized = normalize(node);
+      if (!contained.has(normalized) && !reportingEndpoints.has(normalized) && !advisoryEndpoints.has(normalized)) {
+        issues.push({ code: 'requirements.hierarchy_node_disconnected', message: `Top-level hierarchy node “${node}” must participate in the reporting tree or an advisory relationship.` });
       }
     }
   }
@@ -84,10 +144,16 @@ export function validateSemanticRequirements(document: VisualDocument, requireme
   if (/\bflow\s*\(|\bflow layout\b/i.test(prompt) && document.root.layout?.kind !== 'flow') {
     issues.push({ code: 'semantic.required_flow_layout_missing', message: 'The user explicitly requested flow(...), so the outer composition must use a flow layout.' });
   }
+  if (/\b(hierarchy|governance|org(?:anizational)? chart|taxonomy|decision tree|reporting structure)\b/i.test(prompt) && document.root.layout?.kind !== 'hierarchy') {
+    issues.push({ code: 'semantic.required_hierarchy_layout_missing', message: 'This reporting structure must use hierarchy(...) for the outer composition.' });
+  }
 
   for (const label of requirements.nodes) {
-    if (!matchingNodes(nodes, label).length) {
+    const matches = matchingNodes(nodes, label);
+    if (!matches.length) {
       issues.push({ code: 'semantic.missing_required_node', message: `Required node “${label}” is missing from the diagram.` });
+    } else if (matches.every(({ kind }) => kind === 'frame')) {
+      issues.push({ code: 'semantic.required_node_rendered_as_group', message: `Required entity “${label}” must be a card/component, not a frame used to encode reporting.` });
     }
   }
 
@@ -97,15 +163,17 @@ export function validateSemanticRequirements(document: VisualDocument, requireme
     }
   }
 
-  const requiredFrames = requirements.groups.flatMap((label) => matchingNodes(nodes.filter(({ kind }) => kind === 'frame'), label).slice(0, 1));
-  if (requirements.peerGroups && requiredFrames.length > 1) {
-    const parentIds = new Set(requiredFrames.map(({ id }) => parents.get(id)));
+  const nestedGroups = new Set(requirements.groupMemberships.flatMap(({ members }) => members).map(normalize).filter((member) => requirements.groups.some((group) => normalize(group) === member)));
+  const peerGroupLabels = requirements.groups.filter((group) => !nestedGroups.has(normalize(group)));
+  const peerFrames = peerGroupLabels.flatMap((label) => matchingNodes(nodes.filter(({ kind }) => kind === 'frame'), label).slice(0, 1));
+  if (requirements.peerGroups && peerFrames.length > 1) {
+    const parentIds = new Set(peerFrames.map(({ id }) => parents.get(id)));
     if (parentIds.size !== 1) {
       issues.push({ code: 'semantic.required_groups_not_peers', message: 'Requested peer groups must be sibling frames; do not nest one requested area inside another.' });
     }
   }
-  if (requirements.groupColumns && requiredFrames.length > 1) {
-    const parentId = parents.get(requiredFrames[0]!.id);
+  if (requirements.groupColumns && peerFrames.length > 1) {
+    const parentId = parents.get(peerFrames[0]!.id);
     const parent = nodes.find(({ id }) => id === parentId);
     if (!parent || parent.layout?.kind !== 'grid' || parent.layout.columns !== requirements.groupColumns) {
       issues.push({ code: 'semantic.required_group_columns_missing', message: `Requested peer groups must use a ${requirements.groupColumns}-column grid.` });
@@ -117,13 +185,13 @@ export function validateSemanticRequirements(document: VisualDocument, requireme
     if (!group) continue;
     const descendants = flatten(group).slice(1);
     for (const member of membership.members) if (!matchingNodes(descendants, member).length) {
-      issues.push({ code: 'semantic.required_group_member_missing', message: `Required node “${member}” must be inside the “${membership.group}” group.` });
+      issues.push({ code: 'semantic.required_group_member_missing', message: `Required node or nested group “${member}” must be inside the “${membership.group}” group.` });
     }
   }
 
   for (const relationship of requirements.relationships) {
-    const from = new Set(matchingNodes(nodes, relationship.from).map(({ id }) => id));
-    const to = new Set(matchingNodes(nodes, relationship.to).map(({ id }) => id));
+    const from = resolveRelationshipEndpoint(nodes, requirements, relationship.from);
+    const to = resolveRelationshipEndpoint(nodes, requirements, relationship.to);
     if (!from.size || !to.size) {
       issues.push({
         code: 'semantic.missing_required_relationship',
@@ -131,11 +199,17 @@ export function validateSemanticRequirements(document: VisualDocument, requireme
       });
       continue;
     }
-    const connected = document.connectors.some((connector) => from.has(connector.from.node) && to.has(connector.to.node));
+    const kind = relationship.kind ?? 'reporting';
+    const connected = document.connectors.some((connector) => from.has(connector.from.node) && to.has(connector.to.node)
+      && (kind === 'advisory'
+        ? connector.variant === 'advisory'
+        : kind === 'supporting'
+          ? connector.variant !== 'advisory' && connector.role === 'supporting'
+          : connector.variant !== 'advisory' && connector.role !== 'supporting'));
     if (!connected) {
       issues.push({
         code: 'semantic.missing_required_relationship',
-        message: `Required relationship “${relationship.from} → ${relationship.to}” is missing or points in the wrong direction.`,
+        message: `Required ${kind} relationship “${relationship.from} → ${relationship.to}” is missing, has the wrong variant, or points in the wrong direction.`,
       });
     }
   }
@@ -157,12 +231,49 @@ export function validateSemanticRequirements(document: VisualDocument, requireme
   return issues;
 }
 
-export function createRequirementRepairPrompt(issues: StudioRequirementIssue[]) {
+function resolveRelationshipEndpoint(nodes: VisualNode[], requirements: StudioRequirements, label: string) {
+  const direct = matchingNodes(nodes.filter(({ kind }) => kind !== 'frame'), label);
+  if (direct.length) return new Set(direct.map(({ id }) => id));
+  const frame = matchingNodes(nodes.filter(({ kind }) => kind === 'frame'), label)[0];
+  if (!frame) return new Set<string>();
+  const head = (requirements.groupHeads ?? []).find(({ group }) => normalize(group) === normalize(label));
+  if (!head || head.head === null) return new Set([frame.id]);
+  return new Set([frame.id, ...matchingNodes(flatten(frame).slice(1), head.head).map(({ id }) => id)]);
+}
+
+export function createRequirementRepairPrompt(issues: StudioRequirementIssue[], prompt = '') {
   return [
     'The source compiles, but it does not yet satisfy the requested diagram.',
     'Repair the complete source and call submit_livery again. Preserve requirements that already pass.',
+    ...studioRepairRules(prompt),
     ...issues.slice(0, 8).map(({ code, message }) => `- [${code}] ${message}`),
   ].join('\n');
+}
+
+export function createStudioCompilerRepairPrompt(basePrompt: string, prompt = '') {
+  return [basePrompt, '', 'Studio repair invariants:', ...studioRepairRules(prompt)].join('\n');
+}
+
+function studioRepairRules(prompt: string) {
+  const hierarchy = /\b(hierarchy|governance|org(?:anizational)? chart|taxonomy|decision tree|reporting structure)\b/i.test(prompt);
+  return [
+    '- Keep exactly one root layout call at the end of the figure. Include every top-level card and frame in it.',
+    '- row, column, flow, hierarchy, and stack are layout calls, never components or assigned bindings.',
+    '- A frame owns its children through layout: column, layout: row, or layout: hierarchy; do not add a second root layout for them.',
+    '- Every connector to a nested child must use its fully qualified ID, such as academic.provost or academic.science.',
+    '- Put containment only in groupMemberships. A frame must never have a reporting connector to one of its own members.',
+    '- Never encode reporting by nesting one entity frame inside another. People, boards, councils, and named roles are cards; only requested divisions, schools, areas, or boundaries are frames.',
+    '- Words such as above, under, reports to, leads, and followed by describe reporting relationships. They require connectors and must not be converted into containment.',
+    '- Never list the same label in both nodes and groups, and never add a duplicate card just to make a frame usable as a relationship endpoint. Frames already expose an implicit hierarchy pin.',
+    '- Frames are quiet containers: do not pass variant or tone to frame(...). Style or emphasize the cards inside them.',
+    ...(hierarchy ? [
+      '- The single root layout must be hierarchy(..., direction: down). Never replace it with row, column, grid, or flow during repair.',
+      '- Connect an external parent to a child frame implicit pin; connect a leader inside that frame to nested subgroup frames.',
+      '- Every top-level sibling frame needs exactly one incoming reporting connector. A named group head needs reporting connectors to each nested subgroup frame.',
+      '- Keep reporting connectors primary or secondary and advice connectors variant: advisory.',
+      '- In a taxonomy, ranks and named taxa are cards unless the user explicitly requests visual group regions.',
+    ] : []),
+  ];
 }
 
 function flatten(node: VisualNode): VisualNode[] {

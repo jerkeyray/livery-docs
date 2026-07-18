@@ -4,6 +4,7 @@ import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage }
 import { z } from 'zod';
 import {
   createRequirementRepairPrompt,
+  createStudioCompilerRepairPrompt,
   STUDIO_CANVAS_WIDTH,
   shouldUseDraftModel,
   validateRequirementPlan,
@@ -27,18 +28,23 @@ const compilerCompatibilityError = getCompilerCompatibilityError();
 const submitLiveryInput = z.object({
   intent: z.enum(['replace', 'refine']).describe('Replace for a fundamentally different diagram; refine for a local edit to the current diagram.'),
   requirements: z.object({
-    nodes: z.array(z.string().min(1).max(60)).min(1).max(18).describe('Every explicitly requested node label that must appear.'),
-    groups: z.array(z.string().min(1).max(60)).max(8).describe('Every explicitly requested frame or subsystem label that must appear.'),
+    nodes: z.array(z.string().min(1).max(60)).min(1).max(32).describe('Every explicitly requested node label that must appear.'),
+    groups: z.array(z.string().min(1).max(60)).max(12).describe('Every explicitly requested frame or subsystem label that must appear.'),
     groupMemberships: z.array(z.object({
       group: z.string().min(1).max(60),
       members: z.array(z.string().min(1).max(60)).min(1).max(12),
-    })).max(8).describe('Which required nodes belong inside each requested group.'),
+    })).max(16).describe('Which required nodes or nested groups belong inside each requested group. Containment is not a reporting relationship.'),
+    groupHeads: z.array(z.object({
+      group: z.string().min(1).max(60),
+      head: z.string().min(1).max(60).nullable(),
+    })).max(12).describe('Visible leader for each hierarchy group, or null to route reporting to the implicit frame head without inventing a leader.'),
     peerGroups: z.boolean().describe('True when requested groups are sibling areas rather than nested boundaries.'),
     groupColumns: z.number().int().min(1).max(4).nullable().describe('Explicit requested column count for the peer-group layout, or null when unspecified.'),
     relationships: z.array(z.object({
       from: z.string().min(1).max(60),
       to: z.string().min(1).max(60),
-    })).max(24).describe('Directed relationships that must exist between required node labels.'),
+      kind: z.enum(['reporting', 'supporting', 'advisory']),
+    })).max(48).describe('Reporting, supporting, or advisory relationships between required node or group labels.'),
   }).describe('A faithful acceptance checklist extracted from the user request. Do not omit requirements to make validation easier.'),
   source: z.string().min(1).max(MAX_SOURCE_LENGTH).describe('The complete replacement Livery source.'),
   summary: z.string().min(1).max(160).describe('A short description of what changed.'),
@@ -134,7 +140,7 @@ export async function POST(request: Request) {
               accepted: false as const,
               errorCount: requirementIssues.length,
               diagnostics: requirementIssues,
-              repairPrompt: createRequirementRepairPrompt(requirementIssues),
+              repairPrompt: createRequirementRepairPrompt(requirementIssues, latestUserRequest),
             };
           }
 
@@ -147,7 +153,7 @@ export async function POST(request: Request) {
               accepted: false as const,
               errorCount: errors.length,
               diagnostics: errors.slice(0, 5).map(({ code, message, span }) => ({ code, message, span })),
-              repairPrompt: createRepairPrompt(source, errors),
+              repairPrompt: createStudioCompilerRepairPrompt(createRepairPrompt(source, errors), latestUserRequest),
             };
           }
 
@@ -158,7 +164,7 @@ export async function POST(request: Request) {
               accepted: false as const,
               errorCount: semanticIssues.length,
               diagnostics: semanticIssues,
-              repairPrompt: createRequirementRepairPrompt(semanticIssues),
+              repairPrompt: createRequirementRepairPrompt(semanticIssues, latestUserRequest),
             };
           }
 
@@ -189,10 +195,16 @@ function getCompilerCompatibilityError() {
     request = connect(client.right, api.left, role: primary)
     flow(client, api, direction: auto, gap: lg, rankGap: xl)
   }`);
-  const errors = probe.diagnostics.filter(({ severity }) => severity === 'error');
-  if (errors.length === 0 && probe.document?.root.layout?.kind === 'flow') return null;
+  const hierarchyProbe = compileVisual(`figure studio_hierarchy_probe {
+    board = card("Board")
+    leader = card("Leader")
+    reporting = connect(board.bottom, leader.top, role: primary)
+    hierarchy(board, leader, direction: down)
+  }`);
+  const errors = [...probe.diagnostics, ...hierarchyProbe.diagnostics].filter(({ severity }) => severity === 'error');
+  if (errors.length === 0 && probe.document?.root.layout?.kind === 'flow' && hierarchyProbe.document?.root.layout?.kind === 'hierarchy') return null;
   const details = errors.map(({ code, message }) => `[${code}] ${message}`).join(' | ');
-  return `Studio loaded an incompatible Livery compiler without flow layout support. Restart the docs dev server.${details ? ` ${details}` : ''}`;
+  return `Studio loaded an incompatible Livery compiler without native flow and hierarchy support. Restart the docs dev server.${details ? ` ${details}` : ''}`;
 }
 
 function createStudioInstructions(currentSource: string, theme: BuiltInThemeName) {
@@ -202,13 +214,19 @@ function createStudioInstructions(currentSource: string, theme: BuiltInThemeName
     'For follow-up requests, modify the current source and preserve unrelated structure and labels.',
     'Classify the request before writing source. Use intent replace when the user asks for a fundamentally different system or says to start over. Use intent refine for additions, removals, renames, styling, or rearrangement of the current diagram.',
     'For replace, rebuild the figure around the new request; do not retain unrelated nodes merely because they exist in the current source.',
-    'In submit_livery, list every explicitly requested node, group, group membership, and directed relationship in requirements. Mark peerGroups true when the user divides one system into named areas. Set groupColumns only when the user explicitly asks for an N-column grid; otherwise it must be null. This is an acceptance contract: never omit, invent, or weaken a requirement to make validation pass.',
+    'In submit_livery, list every explicitly requested node, group, group membership, group head, and relationship in requirements. Nodes and groups are disjoint: never list the same label in both, and never create a duplicate card with a frame label merely to receive a connector. A group head names its visible leader; use null when the request names no leader and the relationship should terminate at the frame’s implicit hierarchy pin. groupMemberships may contain node labels or nested group labels; use them only for literal “contains”, “has”, or “belongs inside” requirements. Words such as “above”, “under”, “reports to”, “leads”, and “followed by” are reporting relationships and require connectors; never encode them by nesting entity frames. People, boards, councils, and named roles are nodes/cards, never groups/frames. Never duplicate containment as a reporting relationship from a frame to its own member. For a hierarchy, every top-level sibling group needs one incoming reporting relationship, and a named group head needs reporting relationships to each nested subgroup. Classify structural and main-path relationships as reporting, side effects and dependencies such as payment or storage as supporting, and only non-reporting advice or consultation as advisory. Mark peerGroups true for the requested top-level sibling groups; nested groups must be listed as members of their parent group and are not top-level peers. Set groupColumns only when the user explicitly asks for an N-column grid; otherwise it must be null. This is an acceptance contract: never omit, invent, or weaken a requirement to make validation pass.',
     'For long detailed requests, include at least five required nodes and three required relationships. If grouping is requested, name every requested group.',
     'Every requested diagram change must be submitted through submit_livery.',
     'If compilation or semantic validation fails, use the returned diagnostics and repairPrompt, then submit a corrected complete source with the same faithful requirements.',
     'Never put Livery source in normal chat text. After acceptance, respond with one concise sentence describing the result.',
     'Compose for reading order, not merely for geometric validity. The main flow should move left-to-right or top-to-bottom without backtracking.',
     'For connected architectures and workflows, use flow(..., direction: auto) so the native solver owns ranking, responsive reflow, and routing. Mark the main reading spine with role: primary, meaningful branches secondary, and side effects supporting.',
+    'For governance diagrams, organizational charts, taxonomies, reporting structures, and decision trees, use hierarchy(..., direction: down). Use role: primary or secondary for structural reporting edges. Use variant: advisory for contextual relationships; advisory lines are dotted, arrowless, and do not affect ranks.',
+    'Never model row, column, stack, flow, or hierarchy as components. They are layout calls only.',
+    'Frames are quiet containers and do not accept variant or tone. Style the cards inside them. In a taxonomy, ranks and named taxa are cards unless the user explicitly asks for visual group regions.',
+    'Never connect a frame structurally to one of its own descendants. Connect the external parent to the frame implicit head, or connect a named leader inside the frame to sibling subgroups.',
+    'In a hierarchy, a frame containing a named leader and sibling subgroup frames should use layout: hierarchy. Leaf groups containing descriptive members may use layout: column.',
+    'Use card(label, subtitle: ...) for non-technical roles. Use list(label, items: [...]) only for compact descriptive leaves; never use a list to hide an explicitly requested entity that needs its own relationship.',
     'Use grid, row, or column only when the user explicitly requests exact composition. Never force sequential stages into a 2×2 grid.',
     'Keep side effects such as storage and payment close to the service that invokes them; the topology should determine their placement.',
     'Never stack more than four nodes in one frame. Split long pipelines into compact stage frames or short rows, and keep decision branches visible in the first canvas view.',

@@ -121,7 +121,21 @@ figure checkout("Checkout") {
 }
 ```
 
-Nested bindings keep stable qualified identities such as `commerce.api`. A frame may use `row`, `column`, `grid`, `stack`, or `overlay`, plus padding, background, border, radius, and explicit bounded dimensions.
+Nested bindings keep stable qualified identities such as `commerce.api`. A frame may use `row`, `column`, `grid`, `flow`, `hierarchy`, `stack`, or `overlay`, plus padding, background, border, radius, and explicit bounded dimensions.
+
+Use `hierarchy(...)` for governance, organizational charts, taxonomies, and decision trees. Structural connectors determine reporting ranks; advisory relationships stay outside that tree:
+
+```text
+board = card("Board of Trustees")
+president = card("President")
+senate = card("Faculty Senate", subtitle: "Academic advice")
+
+appoints = connect(board.bottom, president.top, role: primary)
+advice = connect(senate.right, president.left, variant: advisory)
+hierarchy(board, president, senate, direction: down, gap: lg, rankGap: xl)
+```
+
+`card` is the neutral editorial component for roles and concepts. `list("Schools", items: ["Science", "Arts"])` displays one to twelve compact descriptive leaves. Lists should not replace entities that need their own relationships. `legend` accepts up to eight supported connector variants or semantic tones.
 
 ## Connectors and anchors
 
@@ -140,6 +154,8 @@ The functional form is useful when named arguments read better:
 query = connect(agent.right, search.left, label: "query", variant: async)
 ```
 
+Connector variants are `directional`, `bidirectional`, `async`, `data`, and `advisory`. Advisory connectors default to the supporting role and render as dotted lines without arrowheads. `bundleId` can identify trusted shared reporting trunks in host-authored source; the hierarchy solver assigns deterministic bundle IDs automatically.
+
 ## Layout
 
 Use macro layout for the board:
@@ -147,6 +163,8 @@ Use macro layout for the board:
 - `row` for left-to-right sequences
 - `column` for top-to-bottom sequences
 - `grid` for repeated peers
+- `flow` for connected architectures and workflows
+- `hierarchy` for reporting trees and taxonomies
 - `stack` for layered composition
 - `overlay` for deliberate overlap
 - `canvas` for bounded local drawing

@@ -263,7 +263,7 @@ body {
 .hero-actions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 32px; }
 .release-note { margin: 18px 0 0; color: #77736c; font-family: var(--font-mono), monospace; font-size: 10px; }
 .primary-button, .secondary-button { border-radius: 3px; }
-.primary-button { display: inline-flex; min-height: 52px; align-items: center; justify-content: center; gap: 9px; padding: 0 22px; background: var(--ink); box-shadow: 5px 5px 0 var(--livery); color: #fff; font-size: 13px; font-weight: 620; text-decoration: none; transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease; }
+.primary-button { display: inline-flex; min-height: 52px; align-items: center; justify-content: center; gap: 9px; padding: 0 22px; border: 1px solid transparent; background: var(--ink); box-shadow: 5px 5px 0 var(--livery); color: #fff; font-size: 13px; font-weight: 620; text-decoration: none; transition: transform 150ms ease, border-color 150ms ease, background 150ms ease, box-shadow 150ms ease, color 150ms ease; }
 .primary-button:hover { box-shadow: 2px 2px 0 var(--livery); transform: translate(3px, 3px); }
 .secondary-button { display: inline-flex; min-height: 52px; align-items: center; gap: 9px; padding: 0 18px; border: 1px solid #c5c1b7; color: #464440; font-size: 12px; font-weight: 620; text-decoration: none; }
 .secondary-button:hover { border-color: #8f8b82; background: rgb(255 255 255 / 45%); }
@@ -377,8 +377,10 @@ body {
 .dark .hero-section::before { background-color: #18171a; background-image: radial-gradient(circle at 73% 25%, rgb(192 38 79 / 24%), transparent 24%), radial-gradient(circle at 24% 80%, rgb(192 38 79 / 12%), transparent 30%), radial-gradient(#3b383c .8px, transparent .8px); }
 .dark .hero-section::after { border-color: rgb(244 244 245 / 16%); box-shadow: 0 0 0 18px rgb(255 255 255 / 4%), 0 0 0 36px rgb(255 255 255 / 2%); }
 .dark .eyebrow, .dark .hero-lede { color: #aaa7a4; }
-.dark .secondary-button { border-color: #434149; color: #d4d2d0; }
-.dark .secondary-button:hover { border-color: #77737b; background: rgb(255 255 255 / 5%); }
+.dark .primary-button { border-color: #f4f4f5; background: #f4f4f5; color: #151519; }
+.dark .primary-button:hover { border-color: #fff; background: #fff; color: #0b0b0e; }
+.dark .secondary-button { border-color: #45454d; background: #151519; color: #dedee2; }
+.dark .secondary-button:hover { border-color: #73737d; background: #202025; color: #fff; }
 .dark .hero-proof { color: #8f8c92; }
 .dark .hero-proof span { border-color: #39373d; }
 .dark .hero-workbench { border-color: #4a474d; background: #151519; box-shadow: 0 35px 80px rgb(0 0 0 / 42%); }
