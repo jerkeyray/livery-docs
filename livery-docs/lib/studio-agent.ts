@@ -15,19 +15,47 @@ export type StudioRequirements = {
   relationships: Array<{ from: string; to: string; kind: 'reporting' | 'supporting' | 'advisory' }>;
 };
 
+const reportingTreePattern = /\b(governance|org(?:anizational)? chart|taxonomy|decision tree|reporting structure|hierarchy)\b/i;
+const dataTreePattern = /\b(?:b(?:\+)?[ -]?trees?|binary(?: search)? trees?|avl trees?|red[ -]black trees?|tries?|heap trees?)\b/i;
+
+function requestsHierarchy(prompt: string) {
+  return reportingTreePattern.test(prompt) || dataTreePattern.test(prompt);
+}
+
 export function classifyVisualFamily(prompt: string) {
   const value = prompt.toLowerCase();
-  if (/\b(sequence|request[- ]response|interaction narrative|participants? exchange)\b/.test(value)) return 'sequence';
+  if (/\b(sequence|request[- ]response|interaction narrative|participants? exchange|raft|leader election|requestvote)\b/.test(value)) return 'sequence';
   if (/\b(state machine|state transition|lifecycle)\b/.test(value)) return 'state-model';
   if (/\b(class diagram|class model|inheritance|methods? and fields?)\b/.test(value)) return 'class-model';
   if (/\b(entity relationship|er diagram|database schema|cardinalit(?:y|ies))\b/.test(value)) return 'entity-model';
   if (/\b(requirements?|verification|traceability|sysml)\b/.test(value)) return 'requirement-model';
+  if (dataTreePattern.test(value)) return 'tree-view';
   if (/\b(governance|org(?:anizational)? chart|taxonomy|decision tree|reporting structure|hierarchy)\b/.test(value)) return 'tree-view';
   if (/\b(gantt|schedule|milestone|duration)\b/.test(value)) return 'schedule';
   if (/\b(pie|proportion|share of)\b/.test(value)) return 'proportion';
   if (/\b(line chart|bar chart|area chart|xy plot)\b/.test(value)) return 'xy-plot';
   if (/\b(architecture|system|platform|service map|cloud)\b/.test(value)) return 'architecture';
+  const architectureTerms = value.match(/\b(api|gateway|cache|database|db|service|server|client|worker|queue|broker|load balancer|proxy|storage)\b/g) ?? [];
+  if (new Set(architectureTerms).size >= 2) return 'architecture';
   return 'flowchart';
+}
+
+export function createStudioCompositionRules(prompt: string) {
+  const family = classifyVisualFamily(prompt);
+  const rules = [
+    'Before writing source, silently expand the request into an internal visual brief: semantic family, conventional topology, primary reading spine, secondary branches, component types, layout direction, connector roles, and restrained emphasis. Do not show this brief or ask the user to provide ordinary art direction.',
+    'When details are unspecified, make strong conventional design decisions. A short prompt is permission to infer the minimum useful supporting context, never permission to emit the smallest source that merely compiles.',
+    'Treat major named concepts as full bounded standard-library components. Raw text, icon, line, path, circle, image, box, or ghost components must never stand in for a system, service, person, datastore, queue, participant, or decision unless the user explicitly requests an unboxed primitive treatment.',
+  ];
+  if (family === 'architecture') rules.push(
+    'Default architecture brief: compact landscape composition for the 900px canvas, four to seven bounded components, one left-to-right primary spine, and local storage or dependency branches. For a short request use flow(..., direction: right); use auto only when the topology cannot fit or the user requests responsive reflow.',
+    'Choose semantic components: browser or person for callers, api or service for gateways and applications, database for caches and datastores, queue for brokers, and worker for background processing. Put icons inside these components through the icon argument; never place loose icons beside labels.',
+    'Mark the dominant path primary, meaningful branches secondary, and storage or external side effects supporting. Keep most components muted and reserve color for one focal service and at most one outcome.',
+  );
+  if (family === 'sequence') rules.push(
+    'Default interaction brief: identify the actual participants and chronological messages, use interaction(...) with contiguous message order, and communicate state changes through concise participant subtitles and message labels rather than glossary cards.',
+  );
+  return rules;
 }
 
 export type StudioRequirementIssue = {
@@ -84,7 +112,7 @@ export function validateRequirementPlan(requirements: StudioRequirements, prompt
   const requiredNodes = new Set(requirements.nodes.map(normalize));
   const requiredGroups = new Set(requirements.groups.map(normalize));
   const requiredEndpoints = new Set([...requiredNodes, ...requiredGroups]);
-  const hierarchyRequested = /\b(hierarchy|governance|org(?:anizational)? chart|taxonomy|decision tree|reporting structure)\b/i.test(prompt);
+  const hierarchyRequested = requestsHierarchy(prompt);
   for (const label of requirements.nodes) if (requiredGroups.has(normalize(label))) {
     issues.push({
       code: 'requirements.entity_group_overlap',
@@ -168,13 +196,42 @@ export function validateSemanticRequirements(document: VisualDocument, requireme
   if (/\bflow\s*\(|\bflow layout\b/i.test(prompt) && document.root.layout?.kind !== 'flow') {
     issues.push({ code: 'semantic.required_flow_layout_missing', message: 'The user explicitly requested flow(...), so the outer composition must use a flow layout.' });
   }
-  if (/\b(hierarchy|governance|org(?:anizational)? chart|taxonomy|decision tree|reporting structure)\b/i.test(prompt) && document.root.layout?.kind !== 'hierarchy') {
-    issues.push({ code: 'semantic.required_hierarchy_layout_missing', message: 'This reporting structure must use hierarchy(...) for the outer composition.' });
+  if (requestsHierarchy(prompt) && document.root.layout?.kind !== 'hierarchy') {
+    issues.push({ code: 'semantic.required_hierarchy_layout_missing', message: 'This tree must use hierarchy(...) for its structural composition.' });
   }
   if ((requirements.family === 'sequence' || classifyVisualFamily(prompt) === 'sequence') && document.root.layout?.kind !== 'interaction') {
     issues.push({ code: 'semantic.required_interaction_layout_missing', message: 'An ordered participant narrative must use interaction(...) for native lifelines and message rows.' });
   }
   const family = requirements.family ?? classifyVisualFamily(prompt);
+  if (family === 'architecture') {
+    const allowsPrimitiveTreatment = /\b(?:unboxed|loose icons?|raw primitives?|canvas illustration|freeform)\b/i.test(prompt);
+    if (!allowsPrimitiveTreatment) {
+      const requiredUnbounded = requirements.nodes.filter((label) => {
+        const matches = matchingNodes(nodes, label);
+        return matches.length > 0 && matches.every(isUnboundedArchitectureNode);
+      });
+      const topLevelUnbounded = (document.root.children ?? [])
+        .filter((node) => node.label && isUnboundedArchitectureNode(node))
+        .map(({ label }) => label!);
+      const unbounded = [...new Set([...requiredUnbounded, ...topLevelUnbounded])];
+      if (unbounded.length) {
+        issues.push({
+          code: 'semantic.architecture_nodes_unbounded',
+          message: `Architecture systems must use full bounded standard-library components. Replace the loose or ghost treatment for: ${unbounded.join(', ')}.`,
+        });
+      }
+    }
+    const explicitComposition = /\b(?:row|column|grid|flow|hierarchy|interaction|canvas|stack|overlay)(?:\s+layout|\s*\()|\b(?:left[- ]to[- ]right|top[- ]to[- ]bottom|vertical|horizontal|direction\s+(?:right|down|auto))\b|\b(?:one|two|three|four|1|2|3|4)[ -]column\b|\b(?:one|two|three|four|1|2|3|4)\s*[×x]\s*(?:one|two|three|four|1|2|3|4)\b/i.test(prompt);
+    if (!explicitComposition && document.root.layout?.kind !== 'flow') {
+      issues.push({ code: 'semantic.architecture_flow_missing', message: 'An underspecified connected architecture should use one native flow layout with an obvious reading spine.' });
+    } else if (!explicitComposition && prompt.length < 180 && document.root.layout?.kind === 'flow' && document.root.layout.direction !== 'right') {
+      issues.push({ code: 'semantic.architecture_landscape_missing', message: 'This compact architecture should use flow(..., direction: right) so its primary reading spine fills the landscape canvas.' });
+    }
+    const primaryCount = document.connectors.filter(({ role, variant }) => role === 'primary' && variant !== 'advisory').length;
+    if ((document.root.children?.length ?? 0) >= 3 && primaryCount < 2) {
+      issues.push({ code: 'semantic.architecture_primary_spine_missing', message: 'A connected architecture with three or more systems needs at least two primary connectors forming its dominant reading spine.' });
+    }
+  }
   if (family === 'sequence') {
     const participants = nodes.filter(({ kind }) => kind === 'lib.participant');
     const messages = document.connectors.filter(({ semantic }) => semantic === 'message');
@@ -192,6 +249,33 @@ export function validateSemanticRequirements(document: VisualDocument, requireme
   if (family === 'requirement-model') {
     if (!nodes.some(({ kind }) => kind === 'lib.requirement')) issues.push({ code: 'semantic.requirements_missing', message: 'A requirement model must use requirement(...) components.' });
     if (!document.connectors.some(({ semantic }) => semantic === 'trace' || semantic === 'verify' || semantic === 'satisfy')) issues.push({ code: 'semantic.traceability_missing', message: 'A requirement model needs trace, verify, or satisfy relationships.' });
+  }
+  if (dataTreePattern.test(prompt)) {
+    const keyNodes = nodes.filter((node) => node.kind !== 'frame' && numericKeys(node.label).length > 0);
+    if (keyNodes.length < 4 || !keyNodes.some((node) => numericKeys(node.label).length > 1)) {
+      issues.push({ code: 'semantic.data_tree_key_nodes_missing', message: 'A data-structure tree needs a concrete example with at least four key-bearing nodes and at least one multi-key node; do not substitute generic Root, Internal, Leaf, Keys, or Balanced concept cards.' });
+    } else {
+      const keyNodeIds = new Set(keyNodes.map(({ id }) => id));
+      const structural = document.connectors.filter(({ from, to, role, variant }) => keyNodeIds.has(from.node) && keyNodeIds.has(to.node) && role !== 'supporting' && variant !== 'advisory');
+      const branching = new Map<string, number>();
+      structural.forEach(({ from }) => branching.set(from.node, (branching.get(from.node) ?? 0) + 1));
+      if (![...branching.values()].some((count) => count >= 2)) {
+        issues.push({ code: 'semantic.data_tree_branching_missing', message: 'A data-structure tree must visibly branch from a parent key node to at least two child key nodes; a linear explanation is not a tree.' });
+      }
+      const emphasized = keyNodes.filter((node) => node.tone && node.tone !== 'neutral'
+        || node.variant === 'solid'
+        || node.variant === 'emphasis'
+        || node.style?.fill !== undefined
+        || node.style?.stroke !== undefined);
+      if (emphasized.length > 2) {
+        issues.push({ code: 'semantic.data_tree_excessive_emphasis', message: 'A structural tree should emphasize at most two key nodes. Keep internal and leaf nodes neutral or muted so the hierarchy remains readable.' });
+      }
+      const subtitleCounts = new Map<string, number>();
+      keyNodes.forEach(({ subtitle }) => { if (subtitle) subtitleCounts.set(normalize(subtitle), (subtitleCounts.get(normalize(subtitle)) ?? 0) + 1); });
+      if ([...subtitleCounts.values()].some((count) => count >= 3)) {
+        issues.push({ code: 'semantic.data_tree_repeated_explanation', message: 'Do not repeat the same explanatory subtitle on every tree node. State shared properties once and keep node text focused on keys or ranges.' });
+      }
+    }
   }
 
   for (const label of requirements.nodes) {
@@ -301,7 +385,8 @@ export function createStudioCompilerRepairPrompt(basePrompt: string, prompt = ''
 }
 
 function studioRepairRules(prompt: string) {
-  const hierarchy = /\b(hierarchy|governance|org(?:anizational)? chart|taxonomy|decision tree|reporting structure)\b/i.test(prompt);
+  const hierarchy = requestsHierarchy(prompt);
+  const dataTree = dataTreePattern.test(prompt);
   return [
     '- Keep exactly one root layout call at the end of the figure. Include every top-level card and frame in it.',
     '- row, column, flow, hierarchy, and stack are layout calls, never components or assigned bindings.',
@@ -323,7 +408,20 @@ function studioRepairRules(prompt: string) {
       '- Keep reporting connectors primary or secondary and advice connectors variant: advisory.',
       '- In a taxonomy, ranks and named taxa are cards unless the user explicitly requests visual group regions.',
     ] : []),
+    ...(dataTree ? [
+      '- Draw the actual data structure with concrete key-bearing nodes and visible parent-to-child branching. Do not repair it into a generic concept map.',
+      '- For a B-tree, show multiple keys inside at least one node, ordered child key ranges, and leaves on the same level. Put brief explanations in subtitles instead of separate property cards.',
+      '- Emphasize only the root or one active search node. Keep the remaining internal and leaf nodes neutral or muted, and never repeat “same depth” on every leaf.',
+    ] : []),
   ];
+}
+
+function numericKeys(label: string | undefined) {
+  return label?.match(/-?\d+(?:\.\d+)?/g) ?? [];
+}
+
+function isUnboundedArchitectureNode(node: VisualNode) {
+  return node.variant === 'ghost' || !node.kind.startsWith('lib.') && !node.kind.startsWith('component.') && node.kind !== 'frame';
 }
 
 function flatten(node: VisualNode): VisualNode[] {

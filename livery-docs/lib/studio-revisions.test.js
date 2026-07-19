@@ -2,6 +2,14 @@ import { describe, expect, it } from 'bun:test';
 import { appendRevision, createRevisionState, moveRevision, normalizeRevisionState, replaceCurrentRevision, STUDIO_REVISION_LIMIT } from './studio-revisions';
 
 describe('Studio revisions', () => {
+  it('does not expose the initial empty canvas as a diagram revision', () => {
+    expect(appendRevision(createRevisionState(), 'figure first {}')).toEqual({ entries: ['figure first {}'], index: 0 });
+    expect(normalizeRevisionState(['', 'figure first {}', 'figure second {}'], 2)).toEqual({
+      entries: ['figure first {}', 'figure second {}'],
+      index: 1,
+    });
+  });
+
   it('appends after the current revision and discards a stale redo branch', () => {
     let state = appendRevision(createRevisionState('one'), 'two');
     state = appendRevision(state, 'three');

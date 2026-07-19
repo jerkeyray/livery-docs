@@ -16,13 +16,16 @@ export function normalizeRevisionState(entries: unknown, index: unknown, fallbac
   const normalizedIndex = typeof index === 'number' && Number.isInteger(index)
     ? Math.max(0, Math.min(index, entries.length - 1))
     : entries.length - 1;
-  const start = Math.max(0, entries.length - STUDIO_REVISION_LIMIT);
-  const normalizedEntries = entries.slice(start);
-  return { entries: normalizedEntries, index: Math.max(0, normalizedIndex - start) };
+  const withoutBlankStart = entries.length > 1 && entries[0] === '' ? entries.slice(1) : entries;
+  const adjustedIndex = entries.length > 1 && entries[0] === '' ? Math.max(0, normalizedIndex - 1) : normalizedIndex;
+  const start = Math.max(0, withoutBlankStart.length - STUDIO_REVISION_LIMIT);
+  const normalizedEntries = withoutBlankStart.slice(start);
+  return { entries: normalizedEntries, index: Math.max(0, adjustedIndex - start) };
 }
 
 export function appendRevision(state: StudioRevisionState, source: string): StudioRevisionState {
   if (state.entries[state.index] === source) return state;
+  if (state.entries.length === 1 && state.entries[0] === '' && source) return { entries: [source], index: 0 };
   const entries = [...state.entries.slice(0, state.index + 1), source].slice(-STUDIO_REVISION_LIMIT);
   return { entries, index: entries.length - 1 };
 }

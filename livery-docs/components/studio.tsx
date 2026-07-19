@@ -5,12 +5,24 @@ import { getBuiltInTheme, render, type BuiltInThemeName, type Diagnostic } from 
 import { LiveryChatVisual } from '@jerkeyray/react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { LiverySourceEditor, type LiverySourceEditorHandle } from '@/components/livery-source-editor';
 import { SiteThemeToggle } from '@/components/site-theme-toggle';
 import { STUDIO_CANVAS_WIDTH } from '@/lib/studio-agent';
-import { studioStarterPrompts } from '@/lib/studio-prompts';
+import { studioExamples, type StudioExample } from '@/lib/studio-examples';
 import { appendRevision, createRevisionState, moveRevision, replaceCurrentRevision } from '@/lib/studio-revisions';
 import { clearStudioDraft, readStudioDraft, writeStudioDraft } from '@/lib/studio-storage';
+import {
+  calculateStudioFitZoom,
+  clampStudioSidebarWidth,
+  clampStudioZoom,
+  STUDIO_SIDEBAR_DEFAULT,
+  STUDIO_SIDEBAR_MAX,
+  STUDIO_SIDEBAR_MIN,
+  STUDIO_ZOOM_STEP,
+  type StudioSidebarTab,
+  type StudioViewportState,
+} from '@/lib/studio-workbench';
 
 const initialSource = '';
 
@@ -34,11 +46,17 @@ export function Studio() {
   const [input, setInput] = useState('');
   const [source, setSource] = useState(initialSource);
   const [acceptedSource, setAcceptedSource] = useState(initialSource);
-  const [sourceOpen, setSourceOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<StudioSidebarTab>('chat');
+  const [sidebarWidth, setSidebarWidth] = useState(STUDIO_SIDEBAR_DEFAULT);
+  const [viewport, setViewport] = useState<StudioViewportState>({ mode: 'fit', zoom: 1 });
+  const [contentSize, setContentSize] = useState({ width: STUDIO_CANVAS_WIDTH, height: 540 });
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [pendingExample, setPendingExample] = useState<StudioExample>();
   const [themeName, setThemeName] = useState<BuiltInThemeName>('editorial');
   const [generationError, setGenerationError] = useState('');
   const [exportNotice, setExportNotice] = useState('');
   const [sourceCopyNotice, setSourceCopyNotice] = useState('');
+  const [sourceDiagnostics, setSourceDiagnostics] = useState<Diagnostic[]>([]);
   const [storageReady, setStorageReady] = useState(false);
   const [revisions, setRevisions] = useState(() => createRevisionState(initialSource));
   const theme = getBuiltInTheme(themeName);
@@ -48,8 +66,11 @@ export function Studio() {
   const restoredDraft = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const canvasPanelRef = useRef<HTMLElement>(null);
-  const compilation = useMemo(() => source.trim() ? render(source, { theme, width: STUDIO_CANVAS_WIDTH }) : { diagnostics: [] }, [source, theme]);
-  const diagnostics = compilation.diagnostics;
+  const canvasStageRef = useRef<HTMLDivElement>(null);
+  const visualNaturalRef = useRef<HTMLDivElement>(null);
+  const sourceEditorRef = useRef<LiverySourceEditorHandle>(null);
+  const composerFormRef = useRef<HTMLFormElement>(null);
+  const dragState = useRef<{ x: number; y: number; left: number; top: number } | undefined>(undefined);
 
   const { clearError, error, messages, sendMessage, setMessages, status, stop } = useChat({
     transport: new DefaultChatTransport({ api: '/api/chat' }),
@@ -63,6 +84,7 @@ export function Studio() {
         appliedSources.current.add(output.source);
         setSource(output.source);
         setAcceptedSource(output.source);
+        setSourceDiagnostics([]);
         setRevisions((current) => appendRevision(current, output.source!));
         editingRevision.current = false;
         setGenerationError('');
@@ -84,6 +106,7 @@ export function Studio() {
       setThemeName(draft.theme);
       setMessages(draft.messages);
       setRevisions({ entries: draft.revisions, index: draft.revisionIndex });
+      setSidebarWidth(clampStudioSidebarWidth(draft.sidebarWidth));
       appliedSources.current.add(draft.acceptedSource);
     }
     setStorageReady(true);
@@ -100,10 +123,12 @@ export function Studio() {
       messages: messages.slice(-40),
       revisions: revisions.entries,
       revisionIndex: revisions.index,
+      sidebarWidth,
     });
-  }, [acceptedSource, busy, input, messages, revisions, source, storageReady, themeName]);
+  }, [acceptedSource, busy, input, messages, revisions, sidebarWidth, source, storageReady, themeName]);
 
   useEffect(() => {
+    if (messages.length === 0 && status !== 'streaming') return;
     messagesEndRef.current?.scrollIntoView({ block: 'end', behavior: status === 'streaming' ? 'auto' : 'smooth' });
   }, [messages, status]);
 
@@ -119,17 +144,64 @@ export function Studio() {
     return () => window.clearTimeout(timeout);
   }, [sourceCopyNotice]);
 
+  useEffect(() => {
+    if (source === acceptedSource) return;
+    const timeout = window.setTimeout(() => {
+      const nextCompilation = render(source, { theme, width: STUDIO_CANVAS_WIDTH });
+      setSourceDiagnostics(nextCompilation.diagnostics);
+      if (nextCompilation.svg && !nextCompilation.diagnostics.some(({ severity }) => severity === 'error')) {
+        const isExistingManualRevision = editingRevision.current;
+        setAcceptedSource(source);
+        setRevisions((current) => isExistingManualRevision
+          ? replaceCurrentRevision(current, source)
+          : appendRevision(current, source));
+        editingRevision.current = true;
+      }
+    }, 220);
+    return () => window.clearTimeout(timeout);
+  }, [acceptedSource, source, theme]);
+
+  const fitCanvas = useCallback(() => {
+    const stage = canvasStageRef.current;
+    if (!stage) return;
+    const zoom = calculateStudioFitZoom(
+      { width: stage.clientWidth, height: stage.clientHeight },
+      contentSize,
+    );
+    setViewport({ mode: 'fit', zoom });
+  }, [contentSize]);
+
+  useEffect(() => {
+    const stage = canvasStageRef.current;
+    const natural = visualNaturalRef.current;
+    if (!stage) return;
+    const measure = () => {
+      if (natural) {
+        const width = natural.offsetWidth || STUDIO_CANVAS_WIDTH;
+        const height = natural.offsetHeight || 540;
+        setContentSize((current) => current.width === width && current.height === height ? current : { width, height });
+      }
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(stage);
+    if (natural) observer.observe(natural);
+    return () => observer.disconnect();
+  }, [acceptedSource, hasScene, themeName]);
+
+  useEffect(() => {
+    if (viewport.mode === 'fit') fitCanvas();
+  }, [contentSize, fitCanvas, isFullscreen, sidebarWidth, viewport.mode]);
+
+  useEffect(() => {
+    const updateFullscreen = () => setIsFullscreen(document.fullscreenElement === canvasPanelRef.current);
+    document.addEventListener('fullscreenchange', updateFullscreen);
+    return () => document.removeEventListener('fullscreenchange', updateFullscreen);
+  }, []);
+
   const updateSource = (nextSource: string) => {
     setSource(nextSource);
-    const nextCompilation = render(nextSource, { theme, width: STUDIO_CANVAS_WIDTH });
-    if (nextCompilation.svg && !nextCompilation.diagnostics.some(({ severity }) => severity === 'error')) {
-      const isExistingManualRevision = editingRevision.current;
-      setAcceptedSource(nextSource);
-      setRevisions((current) => isExistingManualRevision
-        ? replaceCurrentRevision(current, nextSource)
-        : appendRevision(current, nextSource));
-      editingRevision.current = true;
-    }
+    if (nextSource === acceptedSource) setSourceDiagnostics([]);
   };
 
   const restoreRevision = (delta: -1 | 1) => {
@@ -140,9 +212,11 @@ export function Studio() {
     setRevisions(next);
     setSource(nextSource);
     setAcceptedSource(nextSource);
+    setSourceDiagnostics([]);
     appliedSources.current.add(nextSource);
     editingRevision.current = false;
     setGenerationError('');
+    if (viewport.mode === 'fit') window.requestAnimationFrame(fitCanvas);
   };
 
   const submit = (event: FormEvent) => {
@@ -154,12 +228,6 @@ export function Studio() {
     void sendMessage({ text }, { body: { currentSource: acceptedSource, theme: themeName } });
   };
 
-  const runPrompt = (prompt: string) => {
-    if (busy) return;
-    setGenerationError('');
-    void sendMessage({ text: prompt }, { body: { currentSource: acceptedSource, theme: themeName } });
-  };
-
   const startNewDiagram = () => {
     if (busy) return;
     clearStudioDraft(window.localStorage);
@@ -167,14 +235,126 @@ export function Studio() {
     setMessages([]);
     setSource(initialSource);
     setAcceptedSource(initialSource);
+    setSourceDiagnostics([]);
     setRevisions(createRevisionState(initialSource));
     editingRevision.current = false;
     setInput('');
-    setSourceOpen(false);
+    setActiveTab('chat');
+    setViewport({ mode: 'fit', zoom: 1 });
     setGenerationError('');
     setExportNotice('');
     clearError();
   };
+
+  const applyExample = (example: StudioExample) => {
+    if (busy) return;
+    setMessages([]);
+    setInput('');
+    setSource(example.source);
+    setAcceptedSource(example.source);
+    setSourceDiagnostics([]);
+    setRevisions(createRevisionState(example.source));
+    appliedSources.current = new Set([example.source]);
+    editingRevision.current = false;
+    setGenerationError('');
+    setViewport({ mode: 'fit', zoom: 1 });
+    setPendingExample(undefined);
+    clearError();
+  };
+
+  const openExample = (example: StudioExample) => {
+    const hasWork = hasScene || messages.length > 0 || input.trim().length > 0;
+    if (hasWork) {
+      setPendingExample(example);
+      return;
+    }
+    applyExample(example);
+  };
+
+  const resizeSidebar = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (window.matchMedia('(max-width: 850px)').matches) return;
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = sidebarWidth;
+    const move = (nextEvent: PointerEvent) => {
+      const viewportMaximum = Math.max(STUDIO_SIDEBAR_MIN, Math.min(STUDIO_SIDEBAR_MAX, window.innerWidth / 2));
+      setSidebarWidth(Math.round(Math.max(STUDIO_SIDEBAR_MIN, Math.min(viewportMaximum, startWidth + nextEvent.clientX - startX))));
+    };
+    const stopResize = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', stopResize);
+      document.body.classList.remove('studio-is-resizing');
+    };
+    document.body.classList.add('studio-is-resizing');
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', stopResize, { once: true });
+  };
+
+  const changeZoom = (delta: number) => {
+    setViewport((current) => ({ mode: 'manual', zoom: clampStudioZoom(current.zoom + delta) }));
+  };
+
+  const toggleFullscreen = useCallback(async () => {
+    const panel = canvasPanelRef.current;
+    if (!panel || !document.fullscreenEnabled) return;
+    try {
+      if (document.fullscreenElement === panel) await document.exitFullscreen();
+      else await panel.requestFullscreen();
+    } catch {
+      setExportNotice('Fullscreen unavailable');
+    }
+  }, []);
+
+  const beginCanvasPan = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || event.target !== event.currentTarget) return;
+    const stage = event.currentTarget;
+    dragState.current = { x: event.clientX, y: event.clientY, left: stage.scrollLeft, top: stage.scrollTop };
+    stage.setPointerCapture(event.pointerId);
+    stage.classList.add('is-panning');
+  };
+
+  const continueCanvasPan = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragState.current;
+    if (!drag) return;
+    event.currentTarget.scrollLeft = drag.left - (event.clientX - drag.x);
+    event.currentTarget.scrollTop = drag.top - (event.clientY - drag.y);
+  };
+
+  const endCanvasPan = (event: ReactPointerEvent<HTMLDivElement>) => {
+    dragState.current = undefined;
+    event.currentTarget.classList.remove('is-panning');
+  };
+
+  useEffect(() => {
+    const onShortcut = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const typing = Boolean(target?.closest('input, textarea, [contenteditable="true"], .cm-editor'));
+      if (event.key === 'Escape' && pendingExample) {
+        event.preventDefault();
+        setPendingExample(undefined);
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && ['1', '2', '3'].includes(event.key)) {
+        event.preventDefault();
+        setActiveTab((['chat', 'source', 'examples'] as StudioSidebarTab[])[Number(event.key) - 1]!);
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && activeTab === 'chat') {
+        event.preventDefault();
+        composerFormRef.current?.requestSubmit();
+        return;
+      }
+      if (typing) return;
+      if (event.altKey && event.key === 'ArrowLeft') { event.preventDefault(); restoreRevision(-1); return; }
+      if (event.altKey && event.key === 'ArrowRight') { event.preventDefault(); restoreRevision(1); return; }
+      if (event.key === '0') { event.preventDefault(); fitCanvas(); return; }
+      if (event.key === '-' || event.key === '_') { event.preventDefault(); changeZoom(-STUDIO_ZOOM_STEP); return; }
+      if (event.key === '+' || event.key === '=') { event.preventDefault(); changeZoom(STUDIO_ZOOM_STEP); return; }
+      if (event.key.toLowerCase() === 'f') { event.preventDefault(); void toggleFullscreen(); }
+    };
+    window.addEventListener('keydown', onShortcut);
+    return () => window.removeEventListener('keydown', onShortcut);
+  });
 
   const exportDiagram = async (format: 'copy' | 'png' | 'svg') => {
     const svg = canvasPanelRef.current?.querySelector<SVGSVGElement>('.livery-chat-visual-renderer svg');
@@ -217,8 +397,22 @@ export function Studio() {
     }
   };
 
+  const onTabKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    const tabs: StudioSidebarTab[] = ['chat', 'source', 'examples'];
+    const direction = event.key === 'ArrowRight' ? 1 : -1;
+    const next = tabs[(tabs.indexOf(activeTab) + direction + tabs.length) % tabs.length]!;
+    setActiveTab(next);
+    window.requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(`[data-studio-tab="${next}"]`)?.focus());
+  };
+
+  const shellStyle = { '--studio-sidebar-width': `${sidebarWidth}px` } as CSSProperties;
+  const visualSpaceStyle = { width: contentSize.width * viewport.zoom, height: contentSize.height * viewport.zoom };
+  const visualTransformStyle = { width: contentSize.width, transform: `scale(${viewport.zoom})` };
+
   return (
-    <main className="studio-shell" data-theme={themeName}>
+    <main className="studio-shell" data-theme={themeName} style={shellStyle}>
       <header className="studio-header">
         <Link className="studio-brand" href="/" aria-label="Livery home">
           <span aria-hidden className="studio-brand-mark"><i /><i /><i /><i /></span>
@@ -231,102 +425,188 @@ export function Studio() {
         </nav>
       </header>
 
-      <section className="studio-chat-panel" aria-label="Diagram conversation">
-        <div className="studio-chat-heading">
-          <span className="studio-eyebrow">Livery Studio</span>
-          <h1>Describe the system.<br />Shape it together.</h1>
-          <p>Ask for a technical visual, then refine it in plain language. Every revision is compiled before it reaches the canvas.</p>
+      <section className="studio-sidebar" aria-label="Studio workbench">
+        <div className="studio-sidebar-tabs" aria-label="Workbench panels" role="tablist">
+          {(['chat', 'source', 'examples'] as StudioSidebarTab[]).map((tab, index) => (
+            <button
+              aria-controls={`studio-${tab}-panel`}
+              aria-selected={activeTab === tab}
+              data-studio-tab={tab}
+              id={`studio-${tab}-tab`}
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              onKeyDown={onTabKeyDown}
+              role="tab"
+              title={`${tab[0]!.toUpperCase()}${tab.slice(1)} (⌘${index + 1})`}
+              type="button"
+            >{tab}</button>
+          ))}
         </div>
 
-        <div className="studio-messages" aria-live="polite">
-          {messages.length === 0 ? (
-            <div className="studio-empty-chat">
-              <span>Try a starting point</span>
-              {studioStarterPrompts.map(({ title, description, prompt }) => (
-                <button key={title} onClick={() => runPrompt(prompt)} type="button">
-                  <span><strong>{title}</strong><small>{description}</small></span>
-                  <b aria-hidden>↗</b>
-                </button>
+        {activeTab === 'chat' && (
+          <div className="studio-sidebar-panel studio-chat-panel" id="studio-chat-panel" role="tabpanel" aria-labelledby="studio-chat-tab">
+            <div className="studio-messages" aria-live="polite">
+              {messages.length === 0 && (
+                <div className="studio-chat-heading">
+                  <h1>Describe the system.<br />Shape it together.</h1>
+                  <p>Ask for a technical visual, then refine it in plain language. Every revision is compiled before it reaches the canvas.</p>
+                </div>
+              )}
+              <div className="studio-message-list">
+                {messages.length === 0 ? (
+                  <div className="studio-empty-chat">
+                    <span>Need a starting point?</span>
+                    <button onClick={() => setActiveTab('examples')} type="button">
+                      <span><strong>Browse proven examples</strong><small>Open source instantly, without a model call</small></span>
+                      <b aria-hidden>→</b>
+                    </button>
+                  </div>
+                ) : messages.map((message) => <ChatMessage key={message.id} message={message} />)}
+                {busy && <div className="studio-agent-progress"><span /><span /><span /><em>Drafting and checking</em></div>}
+                {(generationError || error) && <div className="studio-chat-error" role="alert">{generationError || error?.message || 'Generation failed. Check the API key and try again.'}</div>}
+                <div ref={messagesEndRef} aria-hidden />
+              </div>
+            </div>
+
+            <form className="studio-composer" onSubmit={submit} ref={composerFormRef}>
+              <textarea aria-label="Diagram request" disabled={busy} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }
+              }} placeholder="Describe a system, workflow, or idea…" rows={3} value={input} />
+              <div>{busy ? <button className="studio-stop-button" onClick={stop} type="button">Stop</button> : <button disabled={!input.trim()} type="submit">Generate <b aria-hidden>→</b></button>}</div>
+            </form>
+          </div>
+        )}
+
+        {activeTab === 'source' && (
+          <div className="studio-sidebar-panel studio-source-panel" id="studio-source-panel" role="tabpanel" aria-labelledby="studio-source-tab">
+            <div className="studio-source-heading">
+              <div><span className="studio-eyebrow">Editable source</span><strong>scene.livery</strong></div>
+              <div className="studio-source-actions">
+                <span aria-live="polite" data-status={sourceCopyNotice === 'Copied' ? 'success' : sourceCopyNotice === 'Copy failed' ? 'error' : 'neutral'}>{sourceCopyNotice}</span>
+                <button className="studio-source-copy" onClick={() => void copySource()} type="button">Copy</button>
+              </div>
+            </div>
+            <LiverySourceEditor diagnostics={sourceDiagnostics} onChange={updateSource} ref={sourceEditorRef} source={source} />
+            <Diagnostics diagnostics={sourceDiagnostics} onSelect={(diagnostic) => sourceEditorRef.current?.focusDiagnostic(diagnostic)} />
+          </div>
+        )}
+
+        {activeTab === 'examples' && (
+          <div className="studio-sidebar-panel studio-examples-panel" id="studio-examples-panel" role="tabpanel" aria-labelledby="studio-examples-tab">
+            <div className="studio-examples-heading"><span className="studio-eyebrow">Compiler proven</span><h1>Example gallery</h1><p>Open a complete Livery program instantly, then inspect or reshape it.</p></div>
+            <div className="studio-example-groups">
+              {Array.from(new Set(studioExamples.map(({ family }) => family))).map((family) => (
+                <section key={family}>
+                  <h2>{family}</h2>
+                  {studioExamples.filter((example) => example.family === family).map((example) => (
+                    <button key={example.id} onClick={() => openExample(example)} type="button">
+                      <span><strong>{example.title}</strong><small>{example.description}</small></span><b aria-hidden>Open</b>
+                    </button>
+                  ))}
+                </section>
               ))}
             </div>
-          ) : messages.map((message) => <ChatMessage key={message.id} message={message} />)}
-          {busy && <div className="studio-agent-progress"><span /><span /><span /><em>Drafting and checking</em></div>}
-          {(generationError || error) && <div className="studio-chat-error" role="alert">{generationError || error?.message || 'Generation failed. Check the API key and try again.'}</div>}
-          <div ref={messagesEndRef} aria-hidden />
-        </div>
-
-        <form className="studio-composer" onSubmit={submit}>
-          <textarea aria-label="Diagram request" disabled={busy} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-              event.preventDefault();
-              event.currentTarget.form?.requestSubmit();
-            }
-          }} placeholder="Describe a system, workflow, or idea…" rows={3} value={input} />
-          <div>{busy ? <button className="studio-stop-button" onClick={stop} type="button">Stop</button> : <button disabled={!input.trim()} type="submit">Generate <b aria-hidden>→</b></button>}</div>
-        </form>
+          </div>
+        )}
       </section>
+
+      <div
+        aria-label="Resize Studio sidebar"
+        aria-orientation="vertical"
+        aria-valuemax={STUDIO_SIDEBAR_MAX}
+        aria-valuemin={STUDIO_SIDEBAR_MIN}
+        aria-valuenow={sidebarWidth}
+        className="studio-sidebar-resizer"
+        onDoubleClick={() => setSidebarWidth(STUDIO_SIDEBAR_DEFAULT)}
+        onKeyDown={(event) => {
+          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+          event.preventDefault();
+          const step = event.shiftKey ? 48 : 16;
+          setSidebarWidth((current) => clampStudioSidebarWidth(current + (event.key === 'ArrowRight' ? step : -step)));
+        }}
+        onPointerDown={resizeSidebar}
+        role="separator"
+        tabIndex={0}
+        title="Drag to resize · double-click to reset"
+      />
 
       <section className="studio-canvas-panel" aria-label="Compiled diagram" data-theme={themeName} ref={canvasPanelRef}>
         <div className="studio-canvas-toolbar">
-          <span aria-live="polite" className="studio-export-notice">{exportNotice}</span>
-          <div className="studio-canvas-actions">
+          <div className="studio-toolbar-primary">
             {(hasScene || messages.length > 0 || input.length > 0) && (
               <button className="studio-new-button" disabled={busy} onClick={startNewDiagram} type="button"><b aria-hidden>+</b><span>New</span></button>
             )}
-            {revisions.entries.length > 1 && (
-              <div className="studio-revision-controls" aria-label="Diagram revisions">
+            {hasScene && (
+              <div className={`studio-revision-controls${revisions.entries.length <= 1 ? ' is-placeholder' : ''}`} aria-hidden={revisions.entries.length <= 1} aria-label="Diagram revisions">
                 <button aria-label="Previous revision" disabled={busy || revisions.index === 0} onClick={() => restoreRevision(-1)} title="Previous revision" type="button">←</button>
                 <span aria-live="polite">{revisions.index + 1}/{revisions.entries.length}</span>
                 <button aria-label="Next revision" disabled={busy || revisions.index === revisions.entries.length - 1} onClick={() => restoreRevision(1)} title="Next revision" type="button">→</button>
               </div>
             )}
+          </div>
+          <span aria-live="polite" className="studio-export-notice">{exportNotice}</span>
+          <div className="studio-canvas-actions">
             <ThemePicker onChange={setThemeName} value={themeName} />
             {hasScene && <ExportMenu onExport={exportDiagram} />}
-            <button aria-expanded={sourceOpen} onClick={() => setSourceOpen((value) => {
-              if (value) editingRevision.current = false;
-              return !value;
-            })} type="button">{sourceOpen ? 'Hide source' : 'View source'}</button>
           </div>
         </div>
-        <div className="studio-canvas-stage">
+        <div
+          className="studio-canvas-stage"
+          onPointerCancel={endCanvasPan}
+          onPointerDown={beginCanvasPan}
+          onPointerMove={continueCanvasPan}
+          onPointerUp={endCanvasPan}
+          ref={canvasStageRef}
+        >
           {hasScene ? (
-            <LiveryChatVisual
-              fallback={<div className="studio-visual-fallback">The current source needs repair.</div>}
-              source={acceptedSource}
-              streaming={busy}
-              theme={theme}
-              timelineControls="auto"
-              width={STUDIO_CANVAS_WIDTH}
-            />
+            <div className="studio-canvas-content-space" style={visualSpaceStyle}>
+              <div className="studio-visual-natural" ref={visualNaturalRef} style={visualTransformStyle}>
+                <LiveryChatVisual
+                  compileDelay={0}
+                  fallback={<div className="studio-visual-fallback">The current source needs repair.</div>}
+                  source={acceptedSource}
+                  streaming={busy}
+                  theme={theme}
+                  timelineControls="auto"
+                  width={STUDIO_CANVAS_WIDTH}
+                />
+              </div>
+            </div>
           ) : (
             <div className="studio-canvas-empty">
               <span aria-hidden className="studio-brand-mark studio-canvas-empty-logo"><i /><i /><i /><i /></span>
               <strong>Your visual starts here</strong>
-              <p>Describe a system or choose a starting point.</p>
+              <p>Describe a system or open a proven example.</p>
+              <button onClick={() => setActiveTab('examples')} type="button">Browse examples</button>
             </div>
           )}
         </div>
+        <div className="studio-viewport-controls" aria-label="Canvas view controls">
+          <button aria-label="Fit diagram" onClick={fitCanvas} title="Fit diagram (0)" type="button">Fit</button>
+          <button aria-label="Zoom out" disabled={viewport.zoom <= 0.25} onClick={() => changeZoom(-STUDIO_ZOOM_STEP)} title="Zoom out (-)" type="button">−</button>
+          <button aria-label="Reset zoom to 100%" className="studio-zoom-value" onClick={() => setViewport({ mode: 'manual', zoom: 1 })} title="Reset zoom to 100%" type="button">{Math.round(viewport.zoom * 100)}%</button>
+          <button aria-label="Zoom in" disabled={viewport.zoom >= 2} onClick={() => changeZoom(STUDIO_ZOOM_STEP)} title="Zoom in (+)" type="button">+</button>
+          <button aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'} disabled={typeof document !== 'undefined' && !document.fullscreenEnabled} onClick={() => void toggleFullscreen()} title="Toggle fullscreen (F)" type="button">{isFullscreen ? '↙' : '↗'}</button>
+        </div>
       </section>
 
-      {sourceOpen && (
-        <aside className="studio-source-panel" aria-label="Livery source">
-          <div className="studio-source-heading">
-            <div><span className="studio-eyebrow">Source</span><strong>scene.livery</strong></div>
-            <div className="studio-source-actions">
-              <span
-                aria-live="polite"
-                data-status={sourceCopyNotice === 'Copied' ? 'success' : sourceCopyNotice === 'Copy failed' ? 'error' : 'neutral'}
-              >{sourceCopyNotice}</span>
-              <button className="studio-source-copy" onClick={() => void copySource()} type="button">Copy source</button>
-              <button className="studio-source-close" onClick={() => {
-                editingRevision.current = false;
-                setSourceOpen(false);
-              }} type="button" aria-label="Close source">×</button>
+      {pendingExample && (
+        <div className="studio-dialog-backdrop" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setPendingExample(undefined);
+        }}>
+          <div aria-describedby="studio-example-confirm-description" aria-labelledby="studio-example-confirm-title" aria-modal="true" className="studio-dialog" role="dialog">
+            <span className="studio-eyebrow">Replace current work</span>
+            <h2 id="studio-example-confirm-title">Open {pendingExample.title}?</h2>
+            <p id="studio-example-confirm-description">This replaces the current chat and revision history with the selected example.</p>
+            <div>
+              <button autoFocus className="studio-dialog-cancel" onClick={() => setPendingExample(undefined)} type="button">Cancel</button>
+              <button className="studio-dialog-confirm" onClick={() => applyExample(pendingExample)} type="button">Open example</button>
             </div>
           </div>
-          <textarea aria-label="Editable Livery source" onChange={(event) => updateSource(event.target.value)} spellCheck={false} value={source} />
-          <Diagnostics diagnostics={diagnostics} />
-        </aside>
+        </div>
       )}
     </main>
   );
@@ -574,12 +854,14 @@ function getSubmissionOutput(part: UIMessage['parts'][number]): SubmissionOutput
   return part.output as SubmissionOutput;
 }
 
-function Diagnostics({ diagnostics }: { diagnostics: Diagnostic[] }) {
+function Diagnostics({ diagnostics, onSelect }: { diagnostics: Diagnostic[]; onSelect: (diagnostic: Diagnostic) => void }) {
   if (diagnostics.length === 0) return <div className="studio-diagnostic-ready"><i />Ready to render</div>;
   return (
     <div className="studio-diagnostics">
       {diagnostics.slice(0, 4).map((diagnostic, index) => (
-        <div key={`${diagnostic.code}-${index}`}><strong>{diagnostic.code}</strong><span>{diagnostic.message}</span></div>
+        <button key={`${diagnostic.code}-${index}`} onClick={() => onSelect(diagnostic)} type="button">
+          <strong>{diagnostic.code}</strong><span>{diagnostic.message}</span>
+        </button>
       ))}
     </div>
   );

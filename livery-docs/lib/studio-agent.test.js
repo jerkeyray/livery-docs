@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { compileProgram } from '@jerkeyray/core';
 import {
   createRequirementRepairPrompt,
+  createStudioCompositionRules,
   createStudioCompilerRepairPrompt,
   classifyVisualFamily,
   shouldUseDraftModel,
@@ -28,6 +29,117 @@ describe('Studio generation contract', () => {
     expect(classifyVisualFamily('Model account and invoice cardinalities in a database schema.')).toBe('entity-model');
     expect(classifyVisualFamily('Draw an order lifecycle state machine.')).toBe('state-model');
     expect(classifyVisualFamily('Map requirements to verification evidence.')).toBe('requirement-model');
+    expect(classifyVisualFamily('Draw a tree diagram explaining B-trees.')).toBe('tree-view');
+    expect(classifyVisualFamily('Make a simple API flow with a gateway, DB, and cache.')).toBe('architecture');
+    expect(classifyVisualFamily('Explain how Raft leader elections work.')).toBe('sequence');
+  });
+
+  test('silently expands terse requests into a strong visual brief', () => {
+    const rules = createStudioCompositionRules('Make a simple API flow with a gateway, DB, and cache.').join('\n');
+    expect(rules).toContain('silently expand the request into an internal visual brief');
+    expect(rules).toContain('compact landscape composition');
+    expect(rules).toContain('database for caches and datastores');
+    expect(rules).toContain('never place loose icons beside labels');
+  });
+
+  test('rejects floating and ghost systems in terse architecture drafts', () => {
+    const prompt = 'Make a simple API flow with a gateway, DB, and cache.';
+    const requirements = {
+      family: 'architecture',
+      nodes: ['Client', 'Gateway', 'API', 'Cache', 'DB'],
+      groups: [],
+      groupMemberships: [],
+      groupHeads: [],
+      peerGroups: false,
+      groupColumns: null,
+      relationships: [
+        { from: 'Client', to: 'Gateway', kind: 'reporting' },
+        { from: 'Gateway', to: 'API', kind: 'reporting' },
+        { from: 'API', to: 'Cache', kind: 'supporting' },
+      ],
+    };
+    const weak = compileProgram(`figure api_flow {
+      client = browser("Client", variant: muted)
+      gateway = api("Gateway", variant: soft, tone: info)
+      service = service("API", variant: muted)
+      cache = database("Cache", variant: ghost)
+      db = database("DB", variant: ghost)
+      connect(client.right, gateway.left, role: primary)
+      connect(gateway.right, service.left, role: primary)
+      connect(service.right, cache.left, role: supporting)
+      connect(service.right, db.left, role: supporting)
+      flow(client, gateway, service, cache, db, direction: right)
+    }`);
+    expect(weak.diagnostics).toEqual([]);
+    expect(validateSemanticRequirements(weak.document, requirements, prompt).map(({ code }) => code))
+      .toContain('semantic.architecture_nodes_unbounded');
+
+    const bounded = compileProgram(`figure api_flow {
+      client = browser("Client", variant: muted)
+      gateway = api("Gateway", variant: soft, tone: info)
+      service = service("API", variant: muted)
+      cache = database("Cache", variant: muted)
+      db = database("DB", variant: muted)
+      connect(client.right, gateway.left, role: primary)
+      connect(gateway.right, service.left, role: primary)
+      connect(service.right, cache.left, role: supporting)
+      connect(service.right, db.left, role: supporting)
+      flow(client, gateway, service, cache, db, direction: right)
+    }`);
+    expect(bounded.diagnostics).toEqual([]);
+    expect(validateSemanticRequirements(bounded.document, requirements, prompt)).toEqual([]);
+  });
+
+  test('defaults terse architectures to a landscape flow but preserves explicit composition', () => {
+    const requirements = {
+      family: 'architecture', nodes: ['Client', 'API', 'DB'], groups: [], groupMemberships: [], groupHeads: [], peerGroups: false, groupColumns: null,
+      relationships: [{ from: 'Client', to: 'API', kind: 'reporting' }, { from: 'API', to: 'DB', kind: 'supporting' }],
+    };
+    const column = compileProgram(`figure api { client = browser("Client") api = api("API") db = database("DB") connect(client.bottom, api.top, role: primary) connect(api.bottom, db.top, role: primary) column(client, api, db) }`);
+    expect(validateSemanticRequirements(column.document, requirements, 'Show an API with a client and DB.').map(({ code }) => code))
+      .toContain('semantic.architecture_flow_missing');
+    expect(validateSemanticRequirements(column.document, requirements, 'Use a vertical column layout for an API with a client and DB.').map(({ code }) => code))
+      .not.toContain('semantic.architecture_flow_missing');
+
+    const auto = compileProgram(`figure api { client = browser("Client") api = api("API") db = database("DB") connect(client.right, api.left, role: primary) connect(api.right, db.left, role: primary) flow(client, api, db, direction: auto) }`);
+    expect(validateSemanticRequirements(auto.document, requirements, 'Show an API with a client and DB.').map(({ code }) => code))
+      .toContain('semantic.architecture_landscape_missing');
+  });
+
+  test('requires data-tree requests to draw concrete keys and real branching', () => {
+    const requirements = {
+      family: 'tree-view',
+      nodes: [],
+      groups: [],
+      groupMemberships: [],
+      groupHeads: [],
+      peerGroups: false,
+      groupColumns: null,
+      relationships: [],
+    };
+    const conceptMap = compileProgram(`figure bad_tree("B-Tree tree") {
+      overview = card("B-Tree")
+      root = card("Root Node")
+      leaf = card("Leaf Node")
+      rootEdge = connect(overview.bottom, root.top, role: primary)
+      leafEdge = connect(root.bottom, leaf.top, role: primary)
+      hierarchy(overview, root, leaf, direction: down)
+    }`);
+    expect(validateSemanticRequirements(conceptMap.document, requirements, 'Draw a tree diagram explaining B-trees.').map(({ code }) => code))
+      .toContain('semantic.data_tree_key_nodes_missing');
+
+    const structuralTree = compileProgram(`figure b_tree("B-tree example") {
+      root = card("[30 | 60]", subtitle: "separator keys")
+      left = card("[5 | 15]", subtitle: "leaf · < 30")
+      middle = card("[35 | 50]", subtitle: "leaf · 30–60")
+      right = card("[70 | 90]", subtitle: "leaf · > 60")
+      a = connect(root.bottom, left.top, role: primary)
+      b = connect(root.bottom, middle.top, role: primary)
+      c = connect(root.bottom, right.top, role: primary)
+      hierarchy(root, left, middle, right, direction: down)
+    }`);
+    expect(structuralTree.diagnostics).toEqual([]);
+    expect(validateSemanticRequirements(structuralTree.document, requirements, 'Draw a tree diagram explaining B-trees.')).toEqual([]);
   });
 
   test('requires the native interaction kernel for ordered participant narratives', () => {

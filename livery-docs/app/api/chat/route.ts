@@ -4,6 +4,7 @@ import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage }
 import { z } from 'zod';
 import {
   createRequirementRepairPrompt,
+  createStudioCompositionRules,
   createStudioCompilerRepairPrompt,
   STUDIO_CANVAS_WIDTH,
   shouldUseDraftModel,
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
     // total cutoff routinely aborted healthy model calls before submit_livery
     // returned, leaving the client with a successful HTTP stream but no scene.
     timeout: { totalMs: 110_000, stepMs: 40_000, chunkMs: 30_000 },
-    system: createStudioInstructions(currentSource, themeName),
+    system: createStudioInstructions(currentSource, themeName, latestUserRequest),
     messages: await convertToModelMessages(messages),
     stopWhen: stepCountIs(8),
     prepareStep: ({ stepNumber }) => stepNumber >= 2 ? { model: openai(fallbackModel) } : undefined,
@@ -215,13 +216,14 @@ function getCompilerCompatibilityError() {
   return `Studio loaded an incompatible Livery compiler without native flow, hierarchy, and interaction support. Restart the docs dev server.${details ? ` ${details}` : ''}`;
 }
 
-function createStudioInstructions(currentSource: string, theme: BuiltInThemeName) {
+function createStudioInstructions(currentSource: string, theme: BuiltInThemeName, latestUserRequest: string) {
   return [
     'You are the Livery Studio diagram agent.',
     "Turn the user's request into a clear, restrained technical visual using the Livery DSL.",
     'For follow-up requests, modify the current source and preserve unrelated structure and labels.',
     'Classify the request before writing source. Use intent replace when the user asks for a fundamentally different system or says to start over. Use intent refine for additions, removals, renames, styling, or rearrangement of the current diagram.',
-    'Select requirements.family before drafting. Sequence and interaction narratives use sequence; state machines use state-model; class and ER schemas use class-model or entity-model; requirements traceability uses requirement-model; reporting trees use tree-view; connected systems use architecture or flowchart.',
+    'Select requirements.family before drafting. Sequence and interaction narratives use sequence; state machines use state-model; class and ER schemas use class-model or entity-model; requirements traceability uses requirement-model; reporting trees and structural data trees use tree-view; connected systems use architecture or flowchart.',
+    ...createStudioCompositionRules(latestUserRequest),
     'For replace, rebuild the figure around the new request; do not retain unrelated nodes merely because they exist in the current source.',
     'In submit_livery, list every explicitly requested node, group, group membership, group head, and relationship in requirements. Nodes and groups are disjoint: never list the same label in both, and never create a duplicate card with a frame label merely to receive a connector. A group head names its visible leader; use null when the request names no leader and the relationship should terminate at the frame’s implicit hierarchy pin. groupMemberships may contain node labels or nested group labels; use them only for literal “contains”, “has”, or “belongs inside” requirements. Words such as “above”, “under”, “reports to”, “leads”, and “followed by” are reporting relationships and require connectors; never encode them by nesting entity frames. People, boards, councils, and named roles are nodes/cards, never groups/frames. Never duplicate containment as a reporting relationship from a frame to its own member. For a hierarchy, every top-level sibling group needs one incoming reporting relationship, and a named group head needs reporting relationships to each nested subgroup. Classify structural and main-path relationships as reporting, side effects and dependencies such as payment or storage as supporting, and only non-reporting advice or consultation as advisory. Mark peerGroups true for the requested top-level sibling groups; nested groups must be listed as members of their parent group and are not top-level peers. Set groupColumns only when the user explicitly asks for an N-column grid; otherwise it must be null. This is an acceptance contract: never omit, invent, or weaken a requirement to make validation pass.',
     'For long detailed requests, include at least five required nodes and three required relationships. If grouping is requested, name every requested group.',
@@ -231,6 +233,7 @@ function createStudioInstructions(currentSource: string, theme: BuiltInThemeName
     'Compose for reading order, not merely for geometric validity. The main flow should move left-to-right or top-to-bottom without backtracking.',
     'For connected architectures and workflows, use flow(..., direction: auto) unless the user explicitly requests direction right or down; honor an explicit direction so the requested composition wins. Connector role accepts only auto, primary, secondary, or supporting. A backward edge may be a semantic feedback loop, but feedback is never a role value. Mark the main reading spine with role: primary, meaningful branches secondary, and side effects supporting.',
     'For governance diagrams, organizational charts, taxonomies, reporting structures, and decision trees, use hierarchy(..., direction: down). Use role: primary or secondary for structural reporting edges. Use variant: advisory for contextual relationships; advisory lines are dotted, arrowless, and do not affect ranks.',
+    'For data structures such as B-trees, B+ trees, binary search trees, AVL trees, red-black trees, tries, and heaps, draw a concrete structural instance with hierarchy(..., direction: down), not a glossary or concept map. A B-tree should contain key-bearing nodes such as “[20 | 40]”, visible branching by key range, and leaves aligned at the same depth. Emphasize only the root or one active search node; keep other nodes neutral or muted. State shared properties once instead of repeating “same depth” on every leaf. Do not create generic Root Node, Internal Node, Leaf Node, Balanced, Ordered, Keys, or Children property cards as the main diagram.',
     'For ordered participant interactions, use participant(...) cards, connect(..., semantic: message, messageKind: sync|async|return, order: N), and one interaction(...) root layout. Message order must be contiguous from zero.',
     'For schemas, use entity(..., fields: [{ name, type, key? }]) and classCard(..., fields: [...], methods: [{ name, signature?, returns? }]). Use connector semantic values for association, inheritance, composition, aggregation, dependency, transition, trace, verify, and satisfy; cardinalities belong only on schema relationships.',
     'Never model row, column, stack, flow, hierarchy, or interaction as components. They are layout calls only.',
@@ -246,7 +249,7 @@ function createStudioInstructions(currentSource: string, theme: BuiltInThemeName
     'Keep connector labels in open routing gaps. Never place a connector label on a frame border, frame heading, or component surface.',
     'Do not turn events, actions, or relationship labels into standalone nodes unless the user explicitly asks for them as system entities.',
     'Use connector variants such as async or data to express semantics instead of adding parenthetical “sync” or “async” text to labels.',
-    'Keep figure titles under five words, node labels under four words, and connector labels under four words unless the user requests exact wording.',
+    'Keep figure titles under five words, node labels under four words, and connector labels under four words unless the user requests exact wording. Avoid tautological titles such as “B-Tree tree” or “API architecture architecture”.',
     'Prefer six to eight nodes and one dominant flow. Add more only when the request requires them.',
     'Use semantic tones and variants before exact paint overrides. When the user requests branded or categorical colors, use safe hex fill, stroke, color, and iconColor values together.',
     'Use default or muted styling for most nodes. Limit semantic color to one or two focal nodes unless the user explicitly asks for categorical coloring.',
