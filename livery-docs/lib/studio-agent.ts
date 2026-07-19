@@ -69,8 +69,12 @@ export function validateRequirementPlan(requirements: StudioRequirements, prompt
   if (asksForPeerGroups && requirements.groups.length > 1 && !requirements.peerGroups) {
     issues.push({ code: 'requirements.peer_groups_incomplete', message: 'The user divided the system into peer areas, so peerGroups must be true.' });
   }
-  const requestedColumns = prompt.match(/\b(?:use (?:a )?)?(three|four|3|4)[ -]column\b/i)?.[1];
-  const expectedColumns = requestedColumns ? ({ three: 3, four: 4 }[requestedColumns.toLowerCase()] ?? Number(requestedColumns)) : undefined;
+  const columnMatch = prompt.match(/\b(?:use (?:a )?)?(one|two|three|four|1|2|3|4)[ -]column\b/i)
+    ?? prompt.match(/\b(one|two|three|four|1|2|3|4)\s*[×x]\s*(?:one|two|three|four|1|2|3|4)\b/i);
+  const requestedColumns = columnMatch?.[1];
+  const expectedColumns = requestedColumns
+    ? ({ one: 1, two: 2, three: 3, four: 4 }[requestedColumns.toLowerCase()] ?? Number(requestedColumns))
+    : undefined;
   if (expectedColumns && requirements.groupColumns !== expectedColumns) {
     issues.push({ code: 'requirements.group_columns_incomplete', message: `The user requested a ${expectedColumns}-column group layout.` });
   }
@@ -308,6 +312,10 @@ function studioRepairRules(prompt: string) {
     '- Words such as above, under, reports to, leads, and followed by describe reporting relationships. They require connectors and must not be converted into containment.',
     '- Never list the same label in both nodes and groups, and never add a duplicate card just to make a frame usable as a relationship endpoint. Frames already expose an implicit hierarchy pin.',
     '- Frames are quiet containers: do not pass variant or tone to frame(...). Style or emphasize the cards inside them.',
+    '- Connector role accepts only auto, primary, secondary, or supporting. Model a feedback loop with a backward secondary or supporting connector; never use feedback as a role.',
+    '- grid(...) requires columns and supports only gap, width, height, align, and distribute as layout options. Never use columnGap or rowGap.',
+    '- For dense peer-frame routing, reorder siblings inside each frame to match connected peers before changing topology. Use a two-column nested grid for a three- or four-member frame when a row makes the outer grid too wide.',
+    '- Give connectors that intentionally share a source or destination the same bundleId so they can use a shared trunk. Do not bundle unrelated relationships.',
     ...(hierarchy ? [
       '- The single root layout must be hierarchy(..., direction: down). Never replace it with row, column, grid, or flow during repair.',
       '- Connect an external parent to a child frame implicit pin; connect a leader inside that frame to nested subgroup frames.',

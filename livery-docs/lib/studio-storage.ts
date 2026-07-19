@@ -1,5 +1,6 @@
 import type { BuiltInThemeName } from '@jerkeyray/core';
 import type { UIMessage } from 'ai';
+import { normalizeRevisionState } from './studio-revisions';
 
 export const STUDIO_DRAFT_STORAGE_KEY = 'livery.studio.draft.v1';
 
@@ -10,6 +11,8 @@ export type StudioDraft = {
   input: string;
   theme: BuiltInThemeName;
   messages: UIMessage[];
+  revisions: string[];
+  revisionIndex: number;
 };
 
 const themeNames = new Set<BuiltInThemeName>(['editorial', 'paper', 'midnight', 'blackout', 'blueprint', 'monochrome']);
@@ -26,7 +29,8 @@ export function readStudioDraft(storage: Pick<Storage, 'getItem'>): StudioDraft 
       || !themeNames.has(value.theme as BuiltInThemeName)
       || !Array.isArray(value.messages)
       || !value.messages.every(isUIMessage)) return undefined;
-    return value as StudioDraft;
+    const revisions = normalizeRevisionState(value.revisions, value.revisionIndex, value.acceptedSource);
+    return { ...value, revisions: revisions.entries, revisionIndex: revisions.index } as StudioDraft;
   } catch {
     return undefined;
   }

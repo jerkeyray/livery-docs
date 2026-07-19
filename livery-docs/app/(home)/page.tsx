@@ -28,7 +28,7 @@ export default function HomePage() {
           <span>livery</span>
         </Link>
         <div className="landing-nav-links">
-          <Link href="/studio" className="is-primary">Studio</Link>
+          <Link href="/studio">Studio</Link>
           <Link href="/docs">Docs</Link>
         </div>
         <div className="landing-nav-actions">

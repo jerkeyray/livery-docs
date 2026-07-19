@@ -72,6 +72,25 @@ describe('Studio generation contract', () => {
     ]);
   });
 
+  test('recognizes explicit two-column and 2×2 peer-group compositions', () => {
+    const requirements = {
+      nodes: ['A', 'B', 'C', 'D', 'E'],
+      groups: ['One', 'Two'],
+      groupMemberships: [],
+      groupHeads: [],
+      peerGroups: true,
+      groupColumns: 2,
+      relationships: [
+        { from: 'A', to: 'B', kind: 'reporting' },
+        { from: 'B', to: 'C', kind: 'reporting' },
+        { from: 'C', to: 'D', kind: 'reporting' },
+      ],
+    };
+    expect(validateRequirementPlan(requirements, 'Arrange the sibling frames in a compact 2×2 composition.')).toEqual([]);
+    expect(validateRequirementPlan(requirements, 'Use a two-column grid for the sibling frames.')).toEqual([]);
+    expect(validateRequirementPlan({ ...requirements, groupColumns: null }, 'Use a 2-column grid for the sibling frames.').map(({ code }) => code)).toContain('requirements.group_columns_incomplete');
+  });
+
   test('requires every relationship endpoint in the node or group contract', () => {
     const issues = validateRequirementPlan({
       nodes: ['API gateway'],

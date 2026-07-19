@@ -8,6 +8,8 @@ const draft = {
   input: 'Add a queue',
   theme: 'midnight',
   messages: [{ id: 'user-1', role: 'user', parts: [{ type: 'text', text: 'Draw a system' }] }],
+  revisions: ['figure demo("Demo") {}'],
+  revisionIndex: 0,
 };
 
 describe('Studio draft storage', () => {
@@ -21,6 +23,11 @@ describe('Studio draft storage', () => {
     expect(readStudioDraft({ getItem: () => '{broken' })).toBeUndefined();
     expect(readStudioDraft({ getItem: () => JSON.stringify({ ...draft, version: 2 }) })).toBeUndefined();
     expect(readStudioDraft({ getItem: () => JSON.stringify({ ...draft, theme: 'unknown' }) })).toBeUndefined();
+  });
+
+  test('migrates a draft saved before revision history existed', () => {
+    const { revisions: _revisions, revisionIndex: _revisionIndex, ...oldDraft } = draft;
+    expect(readStudioDraft({ getItem: () => JSON.stringify(oldDraft) })).toEqual(draft);
   });
 
   test('uses a versioned browser key', () => {

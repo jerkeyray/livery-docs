@@ -8,6 +8,8 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { SiteThemeToggle } from '@/components/site-theme-toggle';
 import { STUDIO_CANVAS_WIDTH } from '@/lib/studio-agent';
+import { studioStarterPrompts } from '@/lib/studio-prompts';
+import { appendRevision, createRevisionState, moveRevision, replaceCurrentRevision } from '@/lib/studio-revisions';
 import { clearStudioDraft, readStudioDraft, writeStudioDraft } from '@/lib/studio-storage';
 
 const initialSource = '';
@@ -20,29 +22,6 @@ const themeOptions = [
   ['blueprint', 'Blueprint'],
   ['monochrome', 'Monochrome'],
 ] as const satisfies ReadonlyArray<readonly [BuiltInThemeName, string]>;
-
-const prompts = [
-  {
-    title: 'Production checkout',
-    description: 'Services, payment, queue, workers, and data',
-    prompt: 'Design a production checkout architecture. Group it into four sibling frames: Client contains Browser; Commerce contains Checkout API and Stripe; Async processing contains Queue and Fulfillment worker; Data contains Postgres. Do not nest these frames. Show Browser calling Checkout API, Checkout API authorizing Stripe and writing Postgres, Checkout API publishing an order event to Queue, and Queue dispatching Fulfillment worker. Use a native flow layout with the customer-to-worker path marked primary and payment and storage marked supporting. Keep labels concise and color restrained.',
-  },
-  {
-    title: 'Research agent loop',
-    description: 'Model, tools, memory, evaluation, and citations',
-    prompt: 'Create an AI research agent workflow. Show a user request entering a planner, a reasoning model deciding when to call web search and document retrieval tools, useful findings being stored in working memory, an evaluator checking evidence quality, and a final answer with citations returning to the user. Make the iterative tool loop clear without crossing connectors.',
-  },
-  {
-    title: 'Realtime data platform',
-    description: 'Events from ingestion to warehouse and dashboard',
-    prompt: 'Explain a realtime analytics platform from event ingestion to insight. Show product events entering an API, flowing into Kafka, being cleaned by a stream processor, written to a warehouse, transformed into metrics, and read by a live operations dashboard. Use one continuous top-to-bottom reading order. Stack the labeled Ingestion, Processing, Storage, and Consumption frames vertically; do not arrange sequential stages in a 2×2 grid. Keep each frame compact, use short connector labels, and distinguish streaming paths from stored-data reads.',
-  },
-  {
-    title: 'Safe deployment',
-    description: 'CI, canary release, observability, and rollback',
-    prompt: 'Visualize a safe deployment pipeline from commit to production. Show a developer commit triggering CI tests, an artifact build, staging verification, a canary deployment, health and error-rate checks, then either promotion to production or automatic rollback. Do not put every step in one tall frame. Use separate compact Build, Release, and Decision stages arranged as short rows, with a clearly visible split from health checks to promotion or rollback. Use success, warning, and danger tones only where they communicate release state.',
-  },
-];
 
 type SubmissionOutput = {
   accepted: boolean;
@@ -59,10 +38,14 @@ export function Studio() {
   const [themeName, setThemeName] = useState<BuiltInThemeName>('editorial');
   const [generationError, setGenerationError] = useState('');
   const [exportNotice, setExportNotice] = useState('');
+  const [sourceCopyNotice, setSourceCopyNotice] = useState('');
   const [storageReady, setStorageReady] = useState(false);
+  const [revisions, setRevisions] = useState(() => createRevisionState(initialSource));
   const theme = getBuiltInTheme(themeName);
   const hasScene = acceptedSource.trim().length > 0;
   const appliedSources = useRef(new Set([initialSource]));
+  const editingRevision = useRef(false);
+  const restoredDraft = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const canvasPanelRef = useRef<HTMLElement>(null);
   const compilation = useMemo(() => source.trim() ? render(source, { theme, width: STUDIO_CANVAS_WIDTH }) : { diagnostics: [] }, [source, theme]);
@@ -80,6 +63,8 @@ export function Studio() {
         appliedSources.current.add(output.source);
         setSource(output.source);
         setAcceptedSource(output.source);
+        setRevisions((current) => appendRevision(current, output.source!));
+        editingRevision.current = false;
         setGenerationError('');
       }
     },
@@ -87,6 +72,8 @@ export function Studio() {
   const busy = status === 'submitted' || status === 'streaming';
 
   useEffect(() => {
+    if (restoredDraft.current) return;
+    restoredDraft.current = true;
     const draft = readStudioDraft(window.localStorage);
     if (draft) {
       // Browser storage is an external session snapshot and must be restored after hydration.
@@ -96,6 +83,7 @@ export function Studio() {
       setInput(draft.input);
       setThemeName(draft.theme);
       setMessages(draft.messages);
+      setRevisions({ entries: draft.revisions, index: draft.revisionIndex });
       appliedSources.current.add(draft.acceptedSource);
     }
     setStorageReady(true);
@@ -110,8 +98,10 @@ export function Studio() {
       input,
       theme: themeName,
       messages: messages.slice(-40),
+      revisions: revisions.entries,
+      revisionIndex: revisions.index,
     });
-  }, [acceptedSource, busy, input, messages, source, storageReady, themeName]);
+  }, [acceptedSource, busy, input, messages, revisions, source, storageReady, themeName]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: 'end', behavior: status === 'streaming' ? 'auto' : 'smooth' });
@@ -123,12 +113,36 @@ export function Studio() {
     return () => window.clearTimeout(timeout);
   }, [exportNotice]);
 
+  useEffect(() => {
+    if (!sourceCopyNotice) return;
+    const timeout = window.setTimeout(() => setSourceCopyNotice(''), 1800);
+    return () => window.clearTimeout(timeout);
+  }, [sourceCopyNotice]);
+
   const updateSource = (nextSource: string) => {
     setSource(nextSource);
     const nextCompilation = render(nextSource, { theme, width: STUDIO_CANVAS_WIDTH });
     if (nextCompilation.svg && !nextCompilation.diagnostics.some(({ severity }) => severity === 'error')) {
+      const isExistingManualRevision = editingRevision.current;
       setAcceptedSource(nextSource);
+      setRevisions((current) => isExistingManualRevision
+        ? replaceCurrentRevision(current, nextSource)
+        : appendRevision(current, nextSource));
+      editingRevision.current = true;
     }
+  };
+
+  const restoreRevision = (delta: -1 | 1) => {
+    if (busy) return;
+    const next = moveRevision(revisions, delta);
+    if (next.index === revisions.index) return;
+    const nextSource = next.entries[next.index] ?? '';
+    setRevisions(next);
+    setSource(nextSource);
+    setAcceptedSource(nextSource);
+    appliedSources.current.add(nextSource);
+    editingRevision.current = false;
+    setGenerationError('');
   };
 
   const submit = (event: FormEvent) => {
@@ -153,6 +167,8 @@ export function Studio() {
     setMessages([]);
     setSource(initialSource);
     setAcceptedSource(initialSource);
+    setRevisions(createRevisionState(initialSource));
+    editingRevision.current = false;
     setInput('');
     setSourceOpen(false);
     setGenerationError('');
@@ -187,6 +203,20 @@ export function Studio() {
     }
   };
 
+  const copySource = async () => {
+    if (!source.trim()) {
+      setSourceCopyNotice('Nothing to copy');
+      return;
+    }
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Text clipboard is unavailable');
+      await navigator.clipboard.writeText(source);
+      setSourceCopyNotice('Copied');
+    } catch {
+      setSourceCopyNotice('Copy failed');
+    }
+  };
+
   return (
     <main className="studio-shell" data-theme={themeName}>
       <header className="studio-header">
@@ -212,7 +242,7 @@ export function Studio() {
           {messages.length === 0 ? (
             <div className="studio-empty-chat">
               <span>Try a starting point</span>
-              {prompts.map(({ title, description, prompt }) => (
+              {studioStarterPrompts.map(({ title, description, prompt }) => (
                 <button key={title} onClick={() => runPrompt(prompt)} type="button">
                   <span><strong>{title}</strong><small>{description}</small></span>
                   <b aria-hidden>↗</b>
@@ -243,9 +273,19 @@ export function Studio() {
             {(hasScene || messages.length > 0 || input.length > 0) && (
               <button className="studio-new-button" disabled={busy} onClick={startNewDiagram} type="button"><b aria-hidden>+</b><span>New</span></button>
             )}
+            {revisions.entries.length > 1 && (
+              <div className="studio-revision-controls" aria-label="Diagram revisions">
+                <button aria-label="Previous revision" disabled={busy || revisions.index === 0} onClick={() => restoreRevision(-1)} title="Previous revision" type="button">←</button>
+                <span aria-live="polite">{revisions.index + 1}/{revisions.entries.length}</span>
+                <button aria-label="Next revision" disabled={busy || revisions.index === revisions.entries.length - 1} onClick={() => restoreRevision(1)} title="Next revision" type="button">→</button>
+              </div>
+            )}
             <ThemePicker onChange={setThemeName} value={themeName} />
             {hasScene && <ExportMenu onExport={exportDiagram} />}
-            <button aria-expanded={sourceOpen} onClick={() => setSourceOpen((value) => !value)} type="button">{sourceOpen ? 'Hide source' : 'View source'}</button>
+            <button aria-expanded={sourceOpen} onClick={() => setSourceOpen((value) => {
+              if (value) editingRevision.current = false;
+              return !value;
+            })} type="button">{sourceOpen ? 'Hide source' : 'View source'}</button>
           </div>
         </div>
         <div className="studio-canvas-stage">
@@ -270,7 +310,20 @@ export function Studio() {
 
       {sourceOpen && (
         <aside className="studio-source-panel" aria-label="Livery source">
-          <div className="studio-source-heading"><div><span className="studio-eyebrow">Source</span><strong>scene.livery</strong></div><button onClick={() => setSourceOpen(false)} type="button" aria-label="Close source">×</button></div>
+          <div className="studio-source-heading">
+            <div><span className="studio-eyebrow">Source</span><strong>scene.livery</strong></div>
+            <div className="studio-source-actions">
+              <span
+                aria-live="polite"
+                data-status={sourceCopyNotice === 'Copied' ? 'success' : sourceCopyNotice === 'Copy failed' ? 'error' : 'neutral'}
+              >{sourceCopyNotice}</span>
+              <button className="studio-source-copy" onClick={() => void copySource()} type="button">Copy source</button>
+              <button className="studio-source-close" onClick={() => {
+                editingRevision.current = false;
+                setSourceOpen(false);
+              }} type="button" aria-label="Close source">×</button>
+            </div>
+          </div>
           <textarea aria-label="Editable Livery source" onChange={(event) => updateSource(event.target.value)} spellCheck={false} value={source} />
           <Diagnostics diagnostics={diagnostics} />
         </aside>
