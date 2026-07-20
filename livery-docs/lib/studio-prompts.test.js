@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { render } from '@jerkeyray/core';
+import { render } from 'liveryscript';
 import { studioStarterPrompts } from './studio-prompts.ts';
 import { classifyVisualFamily, shouldUseDraftModel } from './studio-agent.ts';
 

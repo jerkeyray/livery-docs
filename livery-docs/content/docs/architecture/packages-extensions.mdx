@@ -11,19 +11,20 @@ description: Understand dependency direction and distinguish supported customiza
                          │ Studio/docs  │
                          └──────┬───────┘
                                 │ bootstraps
-┌──────────────┐         ┌──────▼───────┐
-│ @jerkeyray/  │────────▶│ @jerkeyray/  │◀────────┐
-│ export-node  │         │ core         │         │
-└──────▲───────┘         └──────▲───────┘         │
-       │                        │                 │
-┌──────┴───────┐         ┌──────┴───────┐  ┌──────┴───────┐
-│ @jerkeyray/  │         │ @jerkeyray/  │  │ @jerkeyray/  │
-│ cli          │         │ web          │  │ react        │
-└──────────────┘         └──────▲───────┘  └──────┬───────┘
-                                └─────────────────┘
+                         ┌──────▼───────┐
+                         │ liveryscript │ public facade
+                         └──────┬───────┘
+                                │ bundles
+┌──────────────┐         ┌──────▼───────┐         ┌──────────────┐
+│ export-node  │────────▶│ core         │◀────────│ react        │
+└──────▲───────┘         └──────▲───────┘         └──────┬───────┘
+       │                        │                        │
+┌──────┴───────┐         ┌──────┴───────┐                │
+│ cli          │         │ web          │◀───────────────┘
+└──────────────┘         └──────────────┘
 ```
 
-Core owns language, semantics, solving, validation, themes, timelines, catalogs, diagnostics, and portable exports. Web adds DOM retention. React wraps Web. Export Node rasterizes Core SVG. CLI composes Core and Export Node. The docs site bootstraps matching Core/Web/React snapshots and hosts Studio.
+Core owns language, semantics, solving, validation, themes, timelines, catalogs, diagnostics, and portable exports. Web adds DOM retention. React wraps Web. Export Node rasterizes Core SVG. CLI composes Core and Export Node. These are private workspace boundaries bundled behind `liveryscript`; consumers install only that package. The docs site bootstraps the same facade and hosts Studio.
 
 ## Supported extension points
 

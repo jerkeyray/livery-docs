@@ -3,8 +3,8 @@ title: Install from source
 description: Bootstrap the current alpha before public npm packages exist.
 ---
 
-<Callout type="warning" title="The packages are not published">
-  `@jerkeyray/core` and the other package names are not currently available from the public npm registry. Use the repository until release status changes.
+<Callout type="warning" title="The package is not published">
+  `liveryscript` is not currently available from the public npm registry. Use the repository until release status changes.
 </Callout>
 
 ```sh
@@ -24,9 +24,16 @@ bun run dev
 
 The Vite playground is the fastest local feedback loop for source, diagnostics, themes, responsive widths, and timeline states.
 
-## Consume a workspace package
+## Use the built distribution
 
-Until publication, add the package through your monorepo workspace or a pinned repository checkout. Avoid copying `dist` folders by hand: Core, Web, and React are versioned together and should resolve to the same source revision.
+Until publication, use the built `packages/liveryscript` distribution from a pinned checkout. It contains the root, `/web`, `/react`, `/node`, stylesheet, and `livery` CLI entry points as one versioned artifact. Do not install the private implementation workspaces directly.
+
+After publication is verified, the install commands will be:
+
+```sh
+bun add liveryscript
+bun add liveryscript @resvg/resvg-js # only for PNG
+```
 
 ## Verify the checkout
 

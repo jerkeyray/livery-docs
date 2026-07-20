@@ -8,6 +8,7 @@ export function GET() {
     '# Livery documentation',
     '',
     '> Canonical documentation for the programmable `figure` language, SDKs, generating agents, and compiler architecture.',
+    '> Release-matched site: https://livery.jerkeyray.com',
     '',
     'Recommended paths:',
     '- Humans: /docs/start then /docs/language and /docs/sdks',

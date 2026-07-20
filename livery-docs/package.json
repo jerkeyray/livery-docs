@@ -22,9 +22,8 @@
     "@codemirror/search": "^6.7.1",
     "@codemirror/state": "^6.7.1",
     "@codemirror/view": "^6.43.6",
-    "@jerkeyray/core": "file:.vendor/packages/core",
-    "@jerkeyray/react": "file:.vendor/packages/react",
-    "@jerkeyray/web": "file:.vendor/packages/web",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "@lezer/highlight": "^1.2.3",
     "ai": "^7.0.29",
     "cnfast": "^0.0.8",
@@ -33,6 +32,7 @@
     "fumadocs-mdx": "15.1.1",
     "fumadocs-ui": "npm:@fumadocs/base-ui@16.11.4",
     "lucide-react": "^1.24.0",
+    "liveryscript": "file:.vendor/packages/liveryscript",
     "next": "16.2.10",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -51,8 +51,6 @@
     "eslint-config-next": "16.2.10"
   },
   "overrides": {
-    "@jerkeyray/core": "file:.vendor/packages/core",
-    "@jerkeyray/react": "file:.vendor/packages/react",
-    "@jerkeyray/web": "file:.vendor/packages/web"
+    "liveryscript": "file:.vendor/packages/liveryscript"
   }
 }

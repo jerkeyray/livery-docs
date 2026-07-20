@@ -1,6 +1,6 @@
 'use client';
 
-import { getLanguageCatalog, type Diagnostic } from '@jerkeyray/core';
+import { getLanguageCatalog, type Diagnostic } from 'liveryscript';
 import { defaultHighlightStyle, HighlightStyle, StreamLanguage, syntaxHighlighting, type StreamParser } from '@codemirror/language';
 import { setDiagnostics, type Diagnostic as CodeMirrorDiagnostic } from '@codemirror/lint';
 import { EditorState } from '@codemirror/state';

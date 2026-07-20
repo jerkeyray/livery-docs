@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
-import '@jerkeyray/react/styles.css';
+import 'liveryscript/styles.css';
 import './studio.css';
 
 export const metadata: Metadata = {

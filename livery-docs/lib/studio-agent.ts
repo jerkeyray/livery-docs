@@ -1,4 +1,4 @@
-import type { VisualDocument, VisualNode } from '@jerkeyray/core';
+import type { VisualDocument, VisualNode } from 'liveryscript';
 
 export const STUDIO_CANVAS_WIDTH = 900;
 

@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -21,22 +21,32 @@ const source = hasSibling ? sibling : clonedSource;
 if (!existsSync(path.join(source, 'node_modules', '.bin', 'tsdown'))) {
   execFileSync('bun', ['install', '--frozen-lockfile'], { cwd: source, stdio: 'inherit' });
 }
-for (const name of ['core', 'web', 'react']) {
-  execFileSync('bun', ['run', '--filter', `@jerkeyray/${name}`, 'build'], { cwd: source, stdio: 'inherit' });
-  const packageSource = path.join(source, 'packages', name);
-  const packageTarget = path.join(vendorRoot, 'packages', name);
-  rmSync(packageTarget, { recursive: true, force: true });
-  mkdirSync(packageTarget, { recursive: true });
-  for (const entry of ['package.json', 'README.md', 'LICENSE', 'dist']) {
-    const from = path.join(packageSource, entry);
-    if (existsSync(from)) cpSync(from, path.join(packageTarget, entry), { recursive: true });
-  }
+for (const name of ['core', 'web', 'react', 'export-node', 'cli']) {
+  execFileSync('bun', ['run', '--filter', `@liveryscript/${name}`, 'build'], { cwd: source, stdio: 'inherit' });
+}
+execFileSync('bun', ['run', '--filter', 'liveryscript', 'build'], { cwd: source, stdio: 'inherit' });
 
-  const installedTarget = path.join(projectRoot, 'node_modules', '@jerkeyray', name);
-  if (existsSync(path.dirname(installedTarget))) {
-    rmSync(installedTarget, { recursive: true, force: true });
-    cpSync(packageTarget, installedTarget, { recursive: true });
-  }
+const packageSource = path.join(source, 'packages', 'liveryscript');
+const packageTarget = path.join(vendorRoot, 'packages', 'liveryscript');
+rmSync(packageTarget, { recursive: true, force: true });
+mkdirSync(packageTarget, { recursive: true });
+for (const entry of ['package.json', 'README.md', 'LICENSE', 'dist']) {
+  const from = path.join(packageSource, entry);
+  if (existsSync(from)) cpSync(from, path.join(packageTarget, entry), { recursive: true });
+}
+
+// A file dependency is installed from its source directory, so Bun considers
+// devDependencies that npm would ignore in a packed consumer. Strip the
+// facade's private workspace-only build dependencies from the vendored copy.
+const vendoredManifestPath = path.join(packageTarget, 'package.json');
+const vendoredManifest = JSON.parse(readFileSync(vendoredManifestPath, 'utf8'));
+delete vendoredManifest.devDependencies;
+writeFileSync(vendoredManifestPath, `${JSON.stringify(vendoredManifest, null, 2)}\n`);
+
+const installedTarget = path.join(projectRoot, 'node_modules', 'liveryscript');
+if (existsSync(path.dirname(installedTarget))) {
+  rmSync(installedTarget, { recursive: true, force: true });
+  cpSync(packageTarget, installedTarget, { recursive: true });
 }
 
 // These local packages are copied in place instead of receiving a new package
@@ -49,7 +59,7 @@ rmSync(path.join(projectRoot, '.next'), { recursive: true, force: true });
 // Keep the Studio prompt and the compiler capability in lockstep. If a package
 // copy or build ever regresses, fail during startup instead of spending an LLM
 // request repairing syntax that the running compiler cannot understand.
-const coreEntry = path.join(projectRoot, 'node_modules', '@jerkeyray', 'core', 'dist', 'index.mjs');
+const coreEntry = path.join(projectRoot, 'node_modules', 'liveryscript', 'dist', 'index.mjs');
 const { compileVisual } = await import(`${pathToFileURL(coreEntry).href}?bootstrap=${Date.now()}`);
 const flowProbe = compileVisual(`figure bootstrap_flow {
   client = service("Client")

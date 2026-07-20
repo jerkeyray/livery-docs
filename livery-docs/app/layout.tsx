@@ -3,7 +3,7 @@ import './global.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jerkeyray.github.io/livery/'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://livery.jerkeyray.com'),
   title: {
     default: 'Livery | Programmable visuals for agents',
     template: '%s · Livery',

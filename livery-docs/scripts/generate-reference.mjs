@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getLanguageCatalog } from '@jerkeyray/core';
+import { getLanguageCatalog } from 'liveryscript';
 
 const projectRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const outputPath = path.join(projectRoot, 'content/docs/reference/standard-library.mdx');

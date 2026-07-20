@@ -1,5 +1,5 @@
 import { openai } from '@ai-sdk/openai';
-import { builtInThemes, compileVisual, createAgentGuide, createRepairPrompt, getBuiltInTheme, getLanguageCatalog, render, type BuiltInThemeName } from '@jerkeyray/core';
+import { builtInThemes, compileVisual, createAgentGuide, createRepairPrompt, getBuiltInTheme, getLanguageCatalog, render, type BuiltInThemeName } from 'liveryscript';
 import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage } from 'ai';
 import { z } from 'zod';
 import {
@@ -11,6 +11,7 @@ import {
   validateRequirementPlan,
   validateSemanticRequirements,
 } from '@/lib/studio-agent';
+import { takeStudioRateLimit } from '@/lib/studio-rate-limit';
 
 export const maxDuration = 120;
 
@@ -19,8 +20,6 @@ const MAX_REQUEST_BYTES = 96_000;
 const MAX_MESSAGE_TEXT = 4_000;
 const MAX_HISTORY_TEXT = 16_000;
 const MAX_HISTORY_MESSAGES = 10;
-const RATE_LIMIT_REQUESTS = 12;
-const RATE_LIMIT_WINDOW_MS = 60_000;
 const editModel = process.env.LIVERY_STUDIO_MODEL ?? 'gpt-5.4-nano';
 const draftModel = process.env.LIVERY_STUDIO_DRAFT_MODEL ?? 'gpt-5.4-mini';
 const fallbackModel = process.env.LIVERY_STUDIO_FALLBACK_MODEL ?? 'gpt-5.4-mini';
@@ -67,10 +66,10 @@ export async function POST(request: Request) {
     return new Response('Cross-origin requests are not allowed.', { status: 403 });
   }
 
-  const rateLimit = takeRateLimit(request);
+  const rateLimit = await takeStudioRateLimit(request);
   if (!rateLimit.allowed) {
-    return new Response('Too many diagram requests. Try again shortly.', {
-      status: 429,
+    return new Response(rateLimit.message, {
+      status: rateLimit.status,
       headers: { 'Retry-After': String(rateLimit.retryAfter) },
     });
   }
@@ -307,39 +306,9 @@ function logStudioRejection(stage: string, diagnostics: Array<{ code: string; me
   console.warn(`[studio] ${stage} rejected:`, diagnostics.slice(0, 8).map(({ code, message }) => `[${code}] ${message}`).join(' | '));
 }
 
-type RateLimitEntry = { count: number; resetAt: number };
-const rateLimitGlobal = globalThis as typeof globalThis & {
-  liveryStudioRateLimits?: Map<string, RateLimitEntry>;
-};
-const rateLimits = rateLimitGlobal.liveryStudioRateLimits ??= new Map<string, RateLimitEntry>();
-
 function isSameOrigin(request: Request) {
   const origin = request.headers.get('origin');
   return !origin || new URL(origin).host === new URL(request.url).host;
-}
-
-function takeRateLimit(request: Request) {
-  const now = Date.now();
-  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  const key = forwarded || request.headers.get('x-real-ip') || 'unknown';
-  const current = rateLimits.get(key);
-
-  if (!current || current.resetAt <= now) {
-    rateLimits.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    if (rateLimits.size > 5_000) {
-      for (const [entryKey, entry] of rateLimits) {
-        if (entry.resetAt <= now) rateLimits.delete(entryKey);
-      }
-    }
-    return { allowed: true as const, retryAfter: 0 };
-  }
-
-  if (current.count >= RATE_LIMIT_REQUESTS) {
-    return { allowed: false as const, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1_000)) };
-  }
-
-  current.count += 1;
-  return { allowed: true as const, retryAfter: 0 };
 }
 
 function sanitizeMessages(input: unknown): UIMessage[] {

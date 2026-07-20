@@ -1,9 +1,10 @@
-# livery-docs
+# Livery documentation
 
-This is a Next.js application generated with
-[Create Fumadocs](https://github.com/fuma-nama/fumadocs).
+The canonical Livery documentation and Studio site for <https://livery.jerkeyray.com>. The site is a Next.js/Fumadocs application that builds against an exact Livery compiler snapshot and generates its language reference from that compiler.
 
-Bootstrap Livery, install dependencies, and run the development server:
+## Local development
+
+Install dependencies, bootstrap LiveryScript, and start the site:
 
 ```bash
 bun run bootstrap:livery
@@ -11,35 +12,28 @@ bun install
 bun run dev
 ```
 
-The bootstrap command builds clean package snapshots from a sibling `livery` checkout when available. In a standalone checkout it clones `https://github.com/jerkeyray/livery.git` into the ignored `.vendor` directory. Set `LIVERY_REPOSITORY_REF` to pin a branch or release tag for deployment.
+The bootstrap script prefers a sibling checkout at `../../livery`. In a standalone checkout it clones `LIVERY_REPOSITORY_URL` into ignored `.vendor/source`, checks out `LIVERY_REPOSITORY_REF`, builds all private workspaces, then vendors the single public `liveryscript` artifact. Pin `LIVERY_REPOSITORY_REF` to a release tag or immutable commit for production documentation.
 
-Open http://localhost:3000 with your browser to see the result.
+## Environment
 
-## Explore
+Copy `.env.example` to `.env.local`. Studio requires an OpenAI API key and model names. Hosted production also requires Upstash Redis credentials and a long random `STUDIO_RATE_LIMIT_SALT`; production generation fails closed when durable quotas are unavailable.
 
-In the project, you can see:
+Configure a project-level provider spend cap before enabling Studio. Generation requests set provider storage off, and application telemetry must record timing, status, model, and quota state without recording prompts or generated source.
 
-- `lib/source.ts`: Code for content source adapter, [`loader()`](https://fumadocs.dev/docs/headless/source-api) provides the interface to access your content.
-- `lib/layout.shared.tsx`: Shared options for layouts, optional but preferred to keep.
+## Generated reference and verification
 
-| Route                     | Description                                            |
-| ------------------------- | ------------------------------------------------------ |
-| `app/(home)`              | The route group for your landing page and other pages. |
-| `app/docs`                | The documentation layout and pages.                    |
-| `app/api/search/route.ts` | The Route Handler for search.                          |
+```bash
+bun run docs:generate
+bun run docs:check
+bun run types:check
+bun test
+bun run build
+```
 
-### Fumadocs MDX
+`docs:generate` emits syntax and standard-library reference content from `getLanguageCatalog()`. `docs:check` fails on generated drift, invalid Livery examples, broken internal links, missing navigation, or agent-text route coverage. The production build also regenerates the reference so deployed docs cannot silently diverge from the compiler.
 
-A `source.config.ts` config file has been included, you can customise different options like frontmatter schema.
+## Deployment
 
-Read the [Introduction](https://fumadocs.dev/docs/mdx) for further details.
+Vercel runs the configured bootstrap and Next.js build. Set `NEXT_PUBLIC_SITE_URL=https://livery.jerkeyray.com`, pin `LIVERY_REPOSITORY_REF`, and provide the Studio environment variables in the production project. Deploy package installation copy only after `npm view liveryscript` confirms the documented version exists.
 
-## Learn More
-
-To learn more about Next.js and Fumadocs, take a look at the following
-resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
-  features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [Fumadocs](https://fumadocs.dev) - learn about Fumadocs
+The agent-readable surfaces are `/llms.txt`, `/llms-full.txt`, and the Markdown representation of every documentation page.

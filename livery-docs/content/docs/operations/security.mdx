@@ -21,10 +21,16 @@ Remote images require exact HTTPS host allowlisting. Keep the list narrow. PNG e
 
 Compilation caps nesting, expanded nodes, paths, text, states, transitions, repeats, and images. Agent integration should add request-size, source-size, conversation, retry, timeout, concurrency, and rate limits.
 
+## Hosted Studio controls
+
+Before enabling Studio in production, set a hard project-level spend cap with the model provider. Configure `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, and a long random `STUDIO_RATE_LIMIT_SALT`. Hosted Studio allows six generations per minute and 25 per day for each HMAC-hashed client address, plus 500 generations per day globally. Raw client addresses are never written to Redis. Production generation fails closed when the durable limiter is missing or unavailable; the in-memory fallback is development-only.
+
+Provider request storage is disabled. Operational telemetry should capture timestamp, duration, model, response status, repair-attempt count, quota scope, and a random request identifier. Do not log prompts, generated Livery source, raw IP addresses, provider credentials, or complete compiler repair payloads.
+
 ## Trusted application inputs
 
 Themes, token overrides, custom icon path registries, provider credentials, and host policies come from application code—not model output. Labels and comments are untrusted data and are escaped in SVG and isolated in repair prompts.
 
 ## Outside Livery’s boundary
 
-Livery does not authenticate users, authorize model tools, sanitize the surrounding assistant response, secure a provider key, or implement distributed rate limiting. Those controls belong to the hosting application.
+The Livery runtime does not authenticate users, authorize model tools, sanitize the surrounding assistant response, secure a provider key, or impose application quotas. Those controls belong to the hosting application. The hosted Studio route adds its own deployment-specific durable quota layer.

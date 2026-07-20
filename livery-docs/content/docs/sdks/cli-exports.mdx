@@ -6,7 +6,7 @@ description: Produce deterministic SVG, scene JSON, and PNG from one solved scen
 ## Programmatic exports
 
 ```ts
-import { exportVisual } from "@jerkeyray/core";
+import { exportVisual } from "liveryscript";
 
 const result = exportVisual(source, {
   format: "svg",
@@ -21,7 +21,7 @@ JSON output includes the document, diagnostics, solved scene, validation report,
 For PNG in Node or Bun:
 
 ```ts
-import { exportVisualPng } from "@jerkeyray/export-node";
+import { exportVisualPng } from "liveryscript/node";
 
 const result = exportVisualPng(source, {
   width: 720,
@@ -31,6 +31,8 @@ const result = exportVisualPng(source, {
 ```
 
 PNG uses Resvg and returns `Uint8Array`. Resource validation happens before rasterization.
+
+Install `@resvg/resvg-js` alongside LiveryScript only when PNG output is needed. SVG and JSON do not load the optional rasterizer.
 
 ## CLI
 

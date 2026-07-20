@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { compileProgram } from '@jerkeyray/core';
+import { compileProgram } from 'liveryscript';
 import {
   createRequirementRepairPrompt,
   createStudioCompositionRules,

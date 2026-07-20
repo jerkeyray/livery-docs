@@ -3,20 +3,20 @@ title: Release status
 description: Current alpha availability, support boundaries, and documentation versioning.
 ---
 
-Livery is pre-1.0. Package manifests currently identify `0.1.0-alpha.0`, but `@jerkeyray/core` is not available from the public npm registry. Build from a pinned source checkout until publication is announced.
+Livery is pre-1.0. Package manifests currently identify `0.1.0-alpha.0`, but `liveryscript` is not available from the public npm registry. Build from a pinned source checkout until publication is announced.
 
 ## Alpha guarantees
 
 - The programmable `figure` model is the canonical direction.
 - Supported catalog entries are documented and compiler-checked.
-- Public packages are versioned together.
+- The single public LiveryScript distribution keeps every entry point on one version.
 - Runtime APIs may receive additive changes during alpha.
 - Experimental diagram-family metadata can evolve before 1.0.
 - Legacy surfaces remain compatibility paths, not recommended foundations.
 
 ## Documentation version
 
-This site bootstraps Core, Web, and React from a sibling `livery` checkout when present. In standalone builds it clones the configured repository ref. The generated standard-library reference therefore matches the compiler used to build the site.
+This site bootstraps the bundled LiveryScript distribution from a sibling `livery` checkout when present. In standalone builds it clones the configured repository ref. The generated standard-library reference therefore matches the compiler used to build the site.
 
 Set `LIVERY_REPOSITORY_REF` in standalone deployment to pin a branch or release tag. Do not publish documentation from an unpinned moving ref for a versioned release.
 

@@ -1,7 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compileProgram, getLanguageCatalog } from '@jerkeyray/core';
+import { compileProgram, getLanguageCatalog } from 'liveryscript';
 
 const projectRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const docsRoot = path.join(projectRoot, 'content/docs');

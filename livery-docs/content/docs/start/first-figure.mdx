@@ -20,19 +20,32 @@ figure request("Request path") {
 
 The bindings are stable identities. Anchors make direction explicit. `row` gives the solver composition rather than board coordinates.
 
-## Render with Core
+Create `render.mts` beside it in the repository root:
 
 ```ts
-import { render } from "@jerkeyray/core";
+import { render } from "./packages/liveryscript/dist/index.mjs";
+
+const source = await Bun.file("request.livery").text();
 
 const result = render(source, { width: 720 });
 if (!result.svg) {
   console.error(result.diagnostics);
-  return;
+  process.exit(1);
 }
 
-document.querySelector("#figure")!.innerHTML = result.svg;
+await Bun.write("request.svg", result.svg);
+console.log("wrote request.svg");
 ```
+
+Build and run the complete example:
+
+```sh
+bun run build
+bun render.mts
+bun packages/liveryscript/dist/cli.mjs request.livery --output request-cli.svg
+```
+
+Both commands compile and validate the same source. The script exercises the public root API; the second command exercises the public `livery` executable before it is installed from npm.
 
 Warnings may coexist with valid output, so check the output you requested rather than `diagnostics.length`.
 

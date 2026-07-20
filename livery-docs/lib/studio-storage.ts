@@ -1,4 +1,4 @@
-import type { BuiltInThemeName } from '@jerkeyray/core';
+import type { BuiltInThemeName } from 'liveryscript';
 import type { UIMessage } from 'ai';
 import { normalizeRevisionState } from './studio-revisions';
 import { clampStudioSidebarWidth, STUDIO_SIDEBAR_DEFAULT } from './studio-workbench';

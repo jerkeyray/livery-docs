@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { render } from '@jerkeyray/core';
+import { render } from 'liveryscript';
 import { studioExamples } from './studio-examples.ts';
 
 describe('Studio example gallery', () => {

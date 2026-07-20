@@ -6,8 +6,8 @@ description: Render controlled source or streamed agent output with retained val
 Import the component and stylesheet:
 
 ```tsx
-import { LiveryVisual } from "@jerkeyray/react";
-import "@jerkeyray/react/styles.css";
+import { LiveryVisual } from "liveryscript/react";
+import "liveryscript/styles.css";
 
 export function Figure({ source }: { source: string }) {
   return <LiveryVisual source={source} responsive />;
@@ -19,7 +19,7 @@ Use `LiveryVisual` for complete or application-controlled source. It owns one br
 ## Streamed source
 
 ```tsx
-import { LiveryChatVisual } from "@jerkeyray/react";
+import { LiveryChatVisual } from "liveryscript/react";
 
 <LiveryChatVisual
   source={accumulatedSource}
