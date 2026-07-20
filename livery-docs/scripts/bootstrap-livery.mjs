@@ -71,18 +71,25 @@ if (!hasRunningDevServer()) {
 // Keep the Studio prompt and the compiler capability in lockstep. If a package
 // copy or build ever regresses, fail during startup instead of spending an LLM
 // request repairing syntax that the running compiler cannot understand.
-const coreEntry = path.join(projectRoot, 'node_modules', 'liveryscript', 'dist', 'index.mjs');
-const { compileVisual } = await import(`${pathToFileURL(coreEntry).href}?bootstrap=${Date.now()}`);
-const flowProbe = compileVisual(`figure bootstrap_flow {
-  client = service("Client")
-  api = service("API")
-  request = connect(client.right, api.left, role: primary)
-  flow(client, api, direction: auto, gap: lg, rankGap: xl)
-}`);
-const flowErrors = flowProbe.diagnostics.filter(({ severity }) => severity === 'error');
-if (flowErrors.length > 0 || flowProbe.document?.root.layout?.kind !== 'flow') {
-  const details = flowErrors.map(({ code, message }) => `[${code}] ${message}`).join(' | ');
-  throw new Error(`Bootstrapped Livery compiler does not support flow layout${details ? `: ${details}` : '.'}`);
+const coreEntry = path.join(installedTarget, 'dist', 'index.mjs');
+if (!existsSync(coreEntry)) {
+  // CI prepares the file dependency before its first bun install. Runtime
+  // dependencies such as zod do not exist yet, so defer the import probe until
+  // verify invokes bootstrap again after installation.
+  console.log('[bootstrap:livery] Prepared vendored compiler; install dependencies before validation.');
+} else {
+  const { compileVisual } = await import(`${pathToFileURL(coreEntry).href}?bootstrap=${Date.now()}`);
+  const flowProbe = compileVisual(`figure bootstrap_flow {
+    client = service("Client")
+    api = service("API")
+    request = connect(client.right, api.left, role: primary)
+    flow(client, api, direction: auto, gap: lg, rankGap: xl)
+  }`);
+  const flowErrors = flowProbe.diagnostics.filter(({ severity }) => severity === 'error');
+  if (flowErrors.length > 0 || flowProbe.document?.root.layout?.kind !== 'flow') {
+    const details = flowErrors.map(({ code, message }) => `[${code}] ${message}`).join(' | ');
+    throw new Error(`Bootstrapped Livery compiler does not support flow layout${details ? `: ${details}` : '.'}`);
+  }
 }
 
 function hasRunningDevServer() {
