@@ -1,92 +1,85 @@
 <div align="center">
 
+<img src="livery-docs/public/livery-lockup.svg" alt="Livery" width="168">
+
+### Programmable visuals for humans and agents.
+
 <p>
-  <img src="livery-docs/public/livery-lockup.svg" alt="Livery" width="168">
+  Describe the system. Livery turns it into a validated, editable visual—with geometry you can trust.
 </p>
 
 <p>
-  <strong>Documentation and Studio for programmable visuals.</strong>
-</p>
-
-<p>
-  Compiler-derived reference &middot; Agent-readable routes &middot; Validated visual workbench
-</p>
-
-<p>
-  <a href="https://livery.jerkeyray.com/docs">Documentation</a> &middot;
-  <a href="https://livery.jerkeyray.com/studio">Studio</a> &middot;
-  <a href="https://github.com/jerkeyray/livery">Livery source</a> &middot;
-  <a href="https://github.com/jerkeyray/livery-docs/actions/workflows/ci.yml">CI</a>
+  <a href="https://livery.jerkeyray.com/studio"><strong>Open Studio</strong></a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://livery.jerkeyray.com/docs">Read the docs</a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://github.com/jerkeyray/livery">View the compiler</a>
 </p>
 
 </div>
 
----
+<br>
 
-## The documentation is part of the product.
+<a href="https://livery.jerkeyray.com/studio">
+  <img src="livery-docs/public/og.png" alt="Livery Studio — programmable visuals for agents">
+</a>
 
-This repository powers [livery.jerkeyray.com](https://livery.jerkeyray.com): the canonical human documentation, prompt-first Studio, generated language reference, and agent-readable `/llms.txt`, `/llms-full.txt`, and per-page Markdown routes for [Livery](https://github.com/jerkeyray/livery).
+## From intent to production-ready visual
 
-The site builds against an exact compiler revision. It generates its standard-library reference from `getLanguageCatalog()` and compiles every documented Livery program before it ships.
+[Livery Studio](https://livery.jerkeyray.com/studio) pairs a prompt-first workspace with a deterministic visual compiler. Describe an architecture, workflow, model, or data story; Studio drafts the source, validates the result, and keeps the last good render while you refine it.
 
-```text
-Livery compiler snapshot
-  -> generated language reference
-  -> human docs / agent text / Studio examples
-  -> deployed documentation
-```
+- **Prompt it.** Start with plain language or edit the Livery source directly.
+- **Trust it.** Every accepted visual passes semantic, layout, and routing validation.
+- **Shape it.** Refine the composition without losing source control or revision history.
+- **Ship it.** Export portable SVG or PNG for docs, products, and presentations.
 
-If the compiler, catalog, example, link, or route drifts, verification fails instead of publishing a misleading guide.
+## Built for two kinds of reader
 
-## What's included
+The site at [livery.jerkeyray.com](https://livery.jerkeyray.com) is the home of Studio and the canonical Livery reference. People get focused guides, live examples, and a searchable language reference. Agents get the same material through `/llms.txt`, `/llms-full.txt`, and per-page Markdown routes.
 
-- **Two clear journeys:** build a figure with Livery, or build a bounded agent generation and repair loop.
-- **Compiler-derived reference:** components, values, calls, contexts, ports, and status are generated—not maintained by hand.
-- **Source-backed examples:** every gallery example opens instantly in Studio and compiles at desktop and compact widths.
-- **Agent-readable documentation:** `/llms.txt`, `/llms-full.txt`, and Markdown page representations mirror the human information architecture.
-- **Prompt-first Studio:** chat, source, examples, retained valid renders, revision history, export, and responsive canvas controls in one workbench.
-- **Hosted safeguards:** HMAC-keyed Upstash quotas, no raw-IP storage, production fail-closed behavior, and prompt-free operational telemetry.
+Both are generated against an exact compiler revision. If an example, API, route, or reference drifts, the build fails before the site ships.
 
-## Public preview
+## Inside this repository
 
-Livery is available from source and in the hosted [Studio](https://livery.jerkeyray.com/studio). The `liveryscript` npm package remains a preview claim until npm publication and fresh npm/Bun installation checks have completed.
+- `livery-docs/` — the deployable Next.js application
+- `livery-docs/content/` — guides and language documentation
+- `livery-docs/app/studio/` — the hosted visual workbench
+- `livery-docs/scripts/` — reference generation and verification
 
-For the current source checkout:
+## Run it locally
+
+The docs application builds against a neighboring checkout of the [Livery compiler](https://github.com/jerkeyray/livery).
 
 ```sh
 git clone https://github.com/jerkeyray/livery-docs.git
 cd livery-docs/livery-docs
-bun run bootstrap:livery
 bun install --frozen-lockfile
+bun run bootstrap:livery
 bun run dev
 ```
 
-When publishing is verified, installation documentation will use `bun add liveryscript`; PNG additionally requires `bun add @resvg/resvg-js`.
-
 ## Verification
 
-The deployable Next.js/Fumadocs application lives in [`livery-docs/`](./livery-docs). Run its complete local gate:
+Run the same gate used by CI:
 
 ```sh
 cd livery-docs
 bun run verify
 ```
 
-This checks generated-reference drift, all Livery examples, internal links, navigation, agent-text routes, TypeScript, unit tests, and the production build.
+It checks generated-reference drift, every documented Livery program, internal links, agent routes, TypeScript, unit tests, and the production build.
 
-## Deploying the site
+## Deploy
 
-Create a Vercel project with `livery-docs` as its root directory. Pin `LIVERY_REPOSITORY_REF` to the release tag or immutable compiler commit that the site documents, set `NEXT_PUBLIC_SITE_URL=https://livery.jerkeyray.com`, and configure the Studio secrets in [the application README](./livery-docs/README.md).
+Create a Vercel project with `livery-docs` as its root directory. Pin `LIVERY_REPOSITORY_REF` to the compiler tag or immutable commit the site documents, set `NEXT_PUBLIC_SITE_URL`, and configure Studio using the [application guide](./livery-docs/README.md).
 
-The repository CI runs the same verification gate for pull requests and pushes to `main`. Publishing, DNS, provider spend limits, Upstash provisioning, and production deployment remain explicit maintainer actions.
+## Contributing
 
-## Contributing and security
-
-Read [CONTRIBUTING.md](./CONTRIBUTING.md) before changing language examples or generated reference content. Security boundaries and Studio limits are documented in [Security and limits](https://livery.jerkeyray.com/docs/operations/security); report vulnerabilities according to [SECURITY.md](./SECURITY.md).
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) before changing examples or generated reference content. For vulnerabilities, follow [SECURITY.md](./SECURITY.md).
 
 ## Status
 
-Livery is pre-1.0 and in public preview. The docs foundation and Studio are ready to evaluate from source; npm availability becomes a documented fact only after trusted publication and clean-consumer verification.
+Livery is pre-1.0 and in public preview. The hosted Studio and source are ready to explore; APIs may continue to evolve before the first stable release.
 
 ## License
 
