@@ -59,8 +59,14 @@ if (existsSync(path.dirname(installedTarget))) {
 // version. Next can otherwise retain an older compiler in its generated server
 // and vendor chunks even after bootstrap replaced node_modules successfully.
 // Clearing only `.next/cache` is insufficient because `.next/dev/server` also
-// contains compiled vendor code.
-rmSync(path.join(projectRoot, '.next'), { recursive: true, force: true });
+// contains compiled vendor code. Never remove the directory from underneath a
+// running dev server, though: webpack still writes pack files there and reports
+// ENOENT when a concurrent bootstrap deletes them.
+if (!hasRunningDevServer()) {
+  rmSync(path.join(projectRoot, '.next'), { recursive: true, force: true });
+} else {
+  console.warn('[bootstrap:livery] A Next dev server is running; preserving .next. Restart it to load the rebuilt compiler.');
+}
 
 // Keep the Studio prompt and the compiler capability in lockstep. If a package
 // copy or build ever regresses, fail during startup instead of spending an LLM
@@ -77,4 +83,17 @@ const flowErrors = flowProbe.diagnostics.filter(({ severity }) => severity === '
 if (flowErrors.length > 0 || flowProbe.document?.root.layout?.kind !== 'flow') {
   const details = flowErrors.map(({ code, message }) => `[${code}] ${message}`).join(' | ');
   throw new Error(`Bootstrapped Livery compiler does not support flow layout${details ? `: ${details}` : '.'}`);
+}
+
+function hasRunningDevServer() {
+  const lockPath = path.join(projectRoot, '.next', 'dev', 'lock');
+  if (!existsSync(lockPath)) return false;
+  try {
+    const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
+    if (!Number.isInteger(lock.pid) || lock.pid <= 0) return false;
+    process.kill(lock.pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === 'EPERM';
+  }
 }

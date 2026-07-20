@@ -52,6 +52,12 @@ export function createStudioCompositionRules(prompt: string) {
     'Choose semantic components: browser or person for callers, api or service for gateways and applications, database for caches and datastores, queue for brokers, and worker for background processing. Put icons inside these components through the icon argument; never place loose icons beside labels.',
     'Mark the dominant path primary, meaningful branches secondary, and storage or external side effects supporting. Keep most components muted and reserve color for one focal service and at most one outcome.',
   );
+  if (family === 'architecture' && /\b(?:2|two)\s*[×x]\s*(?:2|two)\b/i.test(prompt)) rules.push(
+    'Explicit 2×2 architecture brief: create each requested area with frame(...), never boundary(...), and finish with one unbound grid(frameA, frameB, frameC, frameD, columns: 2) root layout call. Keep the frames as siblings in requested order.',
+    'For a dense 2×2 architecture, use a two-column nested grid and component widths at or below 140 inside every three- or four-member frame. Put cross-frame endpoints toward the center gutters.',
+    'When the primary spine and multiple support edges must occupy the same narrow middle corridor, give those edges one shared corridor bundleId. Preserve every edge label, role, variant, endpoint, and direction.',
+    'Use this syntax shape literally, renaming bindings and components to the request: areaA = frame("Area A", layout: grid, columns: 2, gap: xs, padding: sm) { a = service("A", width: 140) b = service("B", width: 140) c = service("C", width: 140) }; repeat for all four areas; grid(areaA, areaB, areaC, areaD, columns: 2, gap: sm). Do not use column layout inside any three- or four-member frame.',
+  );
   if (family === 'sequence') rules.push(
     'Default interaction brief: identify the actual participants and chronological messages, use interaction(...) with contiguous message order, and communicate state changes through concise participant subtitles and message labels rather than glossary cards.',
   );
@@ -389,7 +395,7 @@ function studioRepairRules(prompt: string) {
   const dataTree = dataTreePattern.test(prompt);
   return [
     '- Keep exactly one root layout call at the end of the figure. Include every top-level card and frame in it.',
-    '- row, column, flow, hierarchy, and stack are layout calls, never components or assigned bindings.',
+    '- row, column, grid, flow, hierarchy, interaction, stack, and overlay are layout calls, never components or assigned bindings.',
     '- A frame owns its children through layout: column, layout: row, or layout: hierarchy; do not add a second root layout for them.',
     '- Every connector to a nested child must use its fully qualified ID, such as academic.provost or academic.science.',
     '- Put containment only in groupMemberships. A frame must never have a reporting connector to one of its own members.',
@@ -399,8 +405,12 @@ function studioRepairRules(prompt: string) {
     '- Frames are quiet containers: do not pass variant or tone to frame(...). Style or emphasize the cards inside them.',
     '- Connector role accepts only auto, primary, secondary, or supporting. Model a feedback loop with a backward secondary or supporting connector; never use feedback as a role.',
     '- grid(...) requires columns and supports only gap, width, height, align, and distribute as layout options. Never use columnGap or rowGap.',
-    '- For dense peer-frame routing, reorder siblings inside each frame to match connected peers before changing topology. Use a two-column nested grid for a three- or four-member frame when a row makes the outer grid too wide.',
-    '- Give connectors that intentionally share a source or destination the same bundleId so they can use a shared trunk. Do not bundle unrelated relationships.',
+    '- A routing failure does not authorize replacing an explicitly requested peer-frame grid with a row, column, or nested frame. Preserve the requested outer columns and sibling membership.',
+    '- For dense peer-frame routing, reorder siblings inside each frame to match connected peers before changing topology. In a requested 2×2 outer grid, use a two-column nested grid and component widths at or below 140 for every three- or four-member frame before trying a row or column.',
+    '- A dense 2×2 repair must use this literal syntax shape for every area: area = frame("Area", layout: grid, columns: 2, gap: xs, padding: sm) { a = service("A", width: 140) b = service("B", width: 140) c = service("C", width: 140) }. Finish with grid(areaA, areaB, areaC, areaD, columns: 2, gap: sm). Rename bindings and semantic components, but do not substitute a column layout.',
+    '- In a 2×2 peer-frame grid, place cross-frame endpoints on the inward side of their frames so labeled support edges use the center horizontal or vertical gutters. Keep advisory feedback in those center gutters when the request forbids an outer route.',
+    '- Give connectors that intentionally share a source or destination the same bundleId so they can use a shared trunk. Do not bundle relationships that share neither an endpoint nor a routing corridor.',
+    '- When the primary spine and several cross-frame support edges intentionally occupy the same narrow middle corridor, give that corridor one shared bundleId across those edges. This declares one visual trunk; it does not change labels, roles, variants, directions, or topology.',
     ...(hierarchy ? [
       '- The single root layout must be hierarchy(..., direction: down). Never replace it with row, column, grid, or flow during repair.',
       '- Connect an external parent to a child frame implicit pin; connect a leader inside that frame to nested subgroup frames.',

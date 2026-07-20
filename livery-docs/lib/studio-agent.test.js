@@ -42,6 +42,28 @@ describe('Studio generation contract', () => {
     expect(rules).toContain('never place loose icons beside labels');
   });
 
+  test('repairs explicit peer grids without binding layouts or changing topology', () => {
+    const repair = createStudioCompilerRepairPrompt(
+      '[semantic.unknown_component] Unknown component grid.\n[layout.routing_exhausted] No valid route is available.',
+      'Arrange four sibling frames as a compact 2×2 composition and keep advisory feedback inside the middle.',
+    );
+    expect(repair).toContain('grid, flow, hierarchy, interaction, stack, and overlay are layout calls');
+    expect(repair).toContain('does not authorize replacing an explicitly requested peer-frame grid');
+    expect(repair).toContain('Keep advisory feedback in those center gutters');
+    expect(repair).toContain('component widths at or below 140');
+    expect(repair).toContain('one shared bundleId across those edges');
+    expect(repair).toContain('layout: grid, columns: 2, gap: xs, padding: sm');
+    expect(repair).toContain('do not substitute a column layout');
+
+    const draftRules = createStudioCompositionRules(
+      'Create an architecture with four sibling frames in a compact 2×2 composition.',
+    ).join('\n');
+    expect(draftRules).toContain('never boundary(...)');
+    expect(draftRules).toContain('component widths at or below 140');
+    expect(draftRules).toContain('one shared corridor bundleId');
+    expect(draftRules).toContain('Use this syntax shape literally');
+  });
+
   test('rejects floating and ghost systems in terse architecture drafts', () => {
     const prompt = 'Make a simple API flow with a gateway, DB, and cache.';
     const requirements = {
