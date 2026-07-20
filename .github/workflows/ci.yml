@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: livery-docs
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.9
+      - name: Bootstrap LiveryScript
+        run: bun run bootstrap:livery
+        env:
+          LIVERY_REPOSITORY_REF: main
+      - name: Install documentation dependencies
+        run: bun install --frozen-lockfile
+      - name: Verify documentation
+        run: bun run verify
+        env:
+          LIVERY_REPOSITORY_REF: main

@@ -10,6 +10,7 @@
     "dev": "bun run bootstrap:livery && next dev --webpack",
     "start": "next start",
     "types:check": "bun run docs:generate && fumadocs-mdx && next typegen && tsc --noEmit",
+    "verify": "bun run bootstrap:livery && node scripts/generate-reference.mjs --check && node scripts/check-docs.mjs && fumadocs-mdx && next typegen && tsc --noEmit && bun test && next build --webpack",
     "postinstall": "fumadocs-mdx",
     "lint": "eslint"
   },

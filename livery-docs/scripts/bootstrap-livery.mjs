@@ -8,12 +8,18 @@ const vendorRoot = path.join(projectRoot, '.vendor');
 const clonedSource = path.join(vendorRoot, 'source');
 const sibling = path.resolve(projectRoot, '..', '..', 'livery');
 const hasSibling = existsSync(path.join(sibling, 'packages', 'core', 'package.json'));
+const repository = process.env.LIVERY_REPOSITORY_URL ?? 'https://github.com/jerkeyray/livery.git';
+const ref = process.env.LIVERY_REPOSITORY_REF ?? 'main';
 
 mkdirSync(vendorRoot, { recursive: true });
-if (!hasSibling && !existsSync(path.join(clonedSource, 'packages', 'core', 'package.json'))) {
-  const repository = process.env.LIVERY_REPOSITORY_URL ?? 'https://github.com/jerkeyray/livery.git';
-  const ref = process.env.LIVERY_REPOSITORY_REF ?? 'main';
-  execFileSync('git', ['clone', '--depth', '1', '--branch', ref, repository, clonedSource], { stdio: 'inherit' });
+if (!hasSibling) {
+  if (!existsSync(path.join(clonedSource, '.git'))) {
+    execFileSync('git', ['clone', '--depth', '1', '--filter=blob:none', '--no-checkout', repository, clonedSource], { stdio: 'inherit' });
+  } else {
+    execFileSync('git', ['remote', 'set-url', 'origin', repository], { cwd: clonedSource, stdio: 'inherit' });
+  }
+  execFileSync('git', ['fetch', '--depth', '1', 'origin', ref], { cwd: clonedSource, stdio: 'inherit' });
+  execFileSync('git', ['checkout', '--detach', 'FETCH_HEAD'], { cwd: clonedSource, stdio: 'inherit' });
   execFileSync('bun', ['install', '--frozen-lockfile'], { cwd: clonedSource, stdio: 'inherit' });
 }
 

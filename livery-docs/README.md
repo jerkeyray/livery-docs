@@ -23,6 +23,12 @@ Configure a project-level provider spend cap before enabling Studio. Generation 
 ## Generated reference and verification
 
 ```bash
+bun run verify
+```
+
+For focused checks while editing:
+
+```bash
 bun run docs:generate
 bun run docs:check
 bun run types:check
