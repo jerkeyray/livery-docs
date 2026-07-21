@@ -13,11 +13,23 @@ const draft = {
   sidebarWidth: 420,
 };
 
+const acceptedPlan = {
+  type: 'livery.plan', version: '0.1', id: 'demo', family: 'process', direction: 'auto',
+  nodes: [{ id: 'start', label: 'Start', kind: 'process' }], edges: [], annotations: [], groups: [],
+};
+
 describe('Studio draft storage', () => {
   test('round-trips the working session', () => {
     const values = new Map();
     writeStudioDraft({ setItem: (key, value) => values.set(key, value) }, draft, 1_000);
     expect(readStudioDraft({ getItem: (key) => values.get(key) ?? null }, 1_000 + STUDIO_DRAFT_TTL_MS - 1)).toEqual(draft);
+  });
+
+  test('round-trips a semantic plan and ignores a malformed optional plan', () => {
+    const values = new Map();
+    writeStudioDraft({ setItem: (key, value) => values.set(key, value) }, { ...draft, acceptedPlan }, 1_000);
+    expect(readStudioDraft({ getItem: (key) => values.get(key) ?? null }, 1_000)?.acceptedPlan).toEqual(acceptedPlan);
+    expect(readStudioDraft({ getItem: () => JSON.stringify({ ...draft, acceptedPlan: { broken: true } }) })).toEqual(draft);
   });
 
   test('expires and removes an inactive draft after 24 hours', () => {

@@ -1,4 +1,4 @@
-import type { BuiltInThemeName } from 'liveryscript';
+import { visualPlanSchema, type BuiltInThemeName, type VisualPlan } from 'liveryscript';
 import type { UIMessage } from 'ai';
 import { normalizeRevisionState } from './studio-revisions';
 import { clampStudioSidebarWidth, STUDIO_SIDEBAR_DEFAULT } from './studio-workbench';
@@ -10,6 +10,7 @@ export type StudioDraft = {
   version: 1;
   source: string;
   acceptedSource: string;
+  acceptedPlan?: VisualPlan;
   input: string;
   theme: BuiltInThemeName;
   messages: UIMessage[];
@@ -39,9 +40,11 @@ export function readStudioDraft(storage: ReadableStudioStorage, now = Date.now()
       || !Array.isArray(value.messages)
       || !value.messages.every(isUIMessage)) return undefined;
     const revisions = normalizeRevisionState(value.revisions, value.revisionIndex, value.acceptedSource);
-    const { savedAt: _savedAt, ...draft } = value;
+    const { savedAt: _savedAt, acceptedPlan: storedPlan, ...draft } = value;
+    const planResult = visualPlanSchema.safeParse(storedPlan);
     return {
       ...draft,
+      ...(planResult.success ? { acceptedPlan: planResult.data } : {}),
       revisions: revisions.entries,
       revisionIndex: revisions.index,
       sidebarWidth: value.sidebarWidth === undefined

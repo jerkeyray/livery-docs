@@ -7,9 +7,13 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { HeroDemo } from '@/components/hero-demo';
-import { SiteThemeToggle } from '@/components/site-theme-toggle';
 
 const outputs = ['React', 'Browser', 'SVG', 'PNG', 'JSON', 'CLI'];
+const heroHighlights = [
+  ['01', 'Typed diagnostics', 'Catch invalid relationships early.'],
+  ['02', 'Deterministic output', 'The same source produces the same diagram.'],
+  ['03', 'Retained state', 'Update existing visuals safely.'],
+];
 
 function GitHubMark({ size = 17 }: { size?: number }) {
   return (
@@ -30,9 +34,9 @@ export default function HomePage() {
         <div className="landing-nav-links">
           <Link href="/studio">Studio</Link>
           <Link href="/docs">Docs</Link>
+          <Link href="/docs/examples">Examples</Link>
         </div>
         <div className="landing-nav-actions">
-          <SiteThemeToggle />
           <a
             className="repo-link"
             href="https://github.com/jerkeyray/livery"
@@ -51,8 +55,8 @@ export default function HomePage() {
             Built for agents &amp; humans
           </div>
           <h1>
-            Make systems
-            <span>visible.</span>
+            <span className="hero-title-main">Make<br />systems</span>
+            <span className="hero-title-accent">visible.</span>
           </h1>
           <p className="hero-lede">
             A small visual language that turns structured ideas into validated,
@@ -62,22 +66,32 @@ export default function HomePage() {
             <Link href="/studio" className="primary-button">
               Open Studio <ArrowRight size={17} />
             </Link>
-            <Link href="/docs" className="secondary-button">Read the docs</Link>
-          </div>
-          <div className="hero-proof" aria-label="Livery highlights">
-            <span><strong>01</strong> typed diagnostics</span>
-            <span><strong>02</strong> deterministic output</span>
-            <span><strong>03</strong> retained state</span>
+            <Link href="/docs" className="secondary-button">
+              Explore the language <ArrowRight size={16} />
+            </Link>
           </div>
         </div>
 
         <HeroDemo />
+
+        <div className="hero-proof" aria-label="Livery highlights">
+          {heroHighlights.map(([index, title, description]) => (
+            <div key={title}>
+              <span><strong>{index}</strong>{title}</span>
+              <p>{description}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
-      <div className="marquee-strip" aria-hidden="true">
-        <span>Describe</span><i>✦</i><span>Validate</span><i>✦</i><span>Render</span><i>✦</i>
-        <span>Animate</span><i>✦</i><span>Export</span><i>✦</i><span>Repeat</span>
-      </div>
+      <section className="hero-next-peek" aria-label="Livery workflow">
+        <strong>From source to system in seconds.</strong>
+        <div>
+          <span><i>01</i> Describe</span>
+          <span><i>02</i> Validate</span>
+          <span><i>03</i> Render</span>
+        </div>
+      </section>
 
       <section className="manifesto-section" id="geometry">
         <div className="manifesto-copy">

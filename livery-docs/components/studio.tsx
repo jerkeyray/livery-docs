@@ -1,14 +1,14 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { getBuiltInTheme, render, type BuiltInThemeName, type Diagnostic } from 'liveryscript';
+import { getBuiltInTheme, render, visualPlanSchema, type BuiltInThemeName, type Diagnostic, type VisualPlan } from 'liveryscript';
 import { LiveryChatVisual } from 'liveryscript/react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { LiverySourceEditor, type LiverySourceEditorHandle } from '@/components/livery-source-editor';
 import { SiteThemeToggle } from '@/components/site-theme-toggle';
-import { STUDIO_CANVAS_WIDTH } from '@/lib/studio-agent';
+import { retainVisualPlanForSource, STUDIO_CANVAS_WIDTH } from '@/lib/studio-agent';
 import { studioExamples, type StudioExample } from '@/lib/studio-examples';
 import { appendRevision, createRevisionState, moveRevision, replaceCurrentRevision } from '@/lib/studio-revisions';
 import { clearStudioDraft, readStudioDraft, writeStudioDraft } from '@/lib/studio-storage';
@@ -37,6 +37,7 @@ const themeOptions = [
 
 type SubmissionOutput = {
   accepted: boolean;
+  plan?: VisualPlan;
   source?: string;
   summary?: string;
   diagnostics?: Array<{ code: string; message: string; severity?: string }>;
@@ -46,6 +47,7 @@ export function Studio() {
   const [input, setInput] = useState('');
   const [source, setSource] = useState(initialSource);
   const [acceptedSource, setAcceptedSource] = useState(initialSource);
+  const [acceptedPlan, setAcceptedPlan] = useState<VisualPlan>();
   const [activeTab, setActiveTab] = useState<StudioSidebarTab>('chat');
   const [sidebarWidth, setSidebarWidth] = useState(STUDIO_SIDEBAR_DEFAULT);
   const [viewport, setViewport] = useState<StudioViewportState>({ mode: 'fit', zoom: 1 });
@@ -80,7 +82,10 @@ export function Studio() {
     onFinish: ({ message }) => {
       for (const part of message.parts) {
         const output = getSubmissionOutput(part);
-        if (!output?.accepted || !output.source || appliedSources.current.has(output.source)) continue;
+        if (!output?.accepted || !output.source) continue;
+        const plan = visualPlanSchema.safeParse(output.plan);
+        setAcceptedPlan(plan.success ? plan.data : undefined);
+        if (appliedSources.current.has(output.source)) continue;
         appliedSources.current.add(output.source);
         setSource(output.source);
         setAcceptedSource(output.source);
@@ -102,6 +107,7 @@ export function Studio() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSource(draft.source);
       setAcceptedSource(draft.acceptedSource);
+      setAcceptedPlan(draft.acceptedPlan);
       setInput(draft.input);
       setThemeName(draft.theme);
       setMessages(draft.messages);
@@ -118,6 +124,7 @@ export function Studio() {
       version: 1,
       source,
       acceptedSource,
+      acceptedPlan,
       input,
       theme: themeName,
       messages: messages.slice(-40),
@@ -125,7 +132,7 @@ export function Studio() {
       revisionIndex: revisions.index,
       sidebarWidth,
     });
-  }, [acceptedSource, busy, input, messages, revisions, sidebarWidth, source, storageReady, themeName]);
+  }, [acceptedPlan, acceptedSource, busy, input, messages, revisions, sidebarWidth, source, storageReady, themeName]);
 
   useEffect(() => {
     if (messages.length === 0 && status !== 'streaming') return;
@@ -152,6 +159,7 @@ export function Studio() {
       if (nextCompilation.svg && !nextCompilation.diagnostics.some(({ severity }) => severity === 'error')) {
         const isExistingManualRevision = editingRevision.current;
         setAcceptedSource(source);
+        setAcceptedPlan(undefined);
         setRevisions((current) => isExistingManualRevision
           ? replaceCurrentRevision(current, source)
           : appendRevision(current, source));
@@ -201,6 +209,7 @@ export function Studio() {
 
   const updateSource = (nextSource: string) => {
     setSource(nextSource);
+    setAcceptedPlan((current) => retainVisualPlanForSource(current, nextSource, acceptedSource));
     if (nextSource === acceptedSource) setSourceDiagnostics([]);
   };
 
@@ -212,6 +221,7 @@ export function Studio() {
     setRevisions(next);
     setSource(nextSource);
     setAcceptedSource(nextSource);
+    setAcceptedPlan(undefined);
     setSourceDiagnostics([]);
     appliedSources.current.add(nextSource);
     editingRevision.current = false;
@@ -225,7 +235,7 @@ export function Studio() {
     if (!text || busy) return;
     setGenerationError('');
     setInput('');
-    void sendMessage({ text }, { body: { currentSource: acceptedSource, theme: themeName } });
+    void sendMessage({ text }, { body: { currentSource: acceptedSource, currentPlan: acceptedPlan, theme: themeName } });
   };
 
   const startNewDiagram = () => {
@@ -235,6 +245,7 @@ export function Studio() {
     setMessages([]);
     setSource(initialSource);
     setAcceptedSource(initialSource);
+    setAcceptedPlan(undefined);
     setSourceDiagnostics([]);
     setRevisions(createRevisionState(initialSource));
     editingRevision.current = false;
@@ -252,6 +263,7 @@ export function Studio() {
     setInput('');
     setSource(example.source);
     setAcceptedSource(example.source);
+    setAcceptedPlan(undefined);
     setSourceDiagnostics([]);
     setRevisions(createRevisionState(example.source));
     appliedSources.current = new Set([example.source]);
@@ -850,7 +862,7 @@ function ChatMessage({ message }: { message: UIMessage }) {
 }
 
 function getSubmissionOutput(part: UIMessage['parts'][number]): SubmissionOutput | undefined {
-  if (part.type !== 'tool-submit_livery' || !('state' in part) || part.state !== 'output-available') return undefined;
+  if (!['tool-submit_livery', 'tool-submit_livery_plan'].includes(part.type) || !('state' in part) || part.state !== 'output-available') return undefined;
   return part.output as SubmissionOutput;
 }
 

@@ -3,15 +3,25 @@ title: Generate with an agent
 description: Give a model a release-matched contract, validate every proposal, and repair failures within a bounded loop.
 ---
 
-An agent proposes Livery source. The compiler decides whether that source is valid. Keep those responsibilities separate.
+For architecture, process, and explainer diagrams, an agent should propose a typed semantic plan. Livery validates the plan, materializes responsive components and layout, and returns canonical editable source. Specialized visuals can still use the textual DSL.
 
 ```text
 user intent
-  → model + compact contract
-  → Livery source only
+  → model + visualPlanSchema
+  → typed nodes, edges, groups, and annotations
+  → deterministic Livery source
   → compile, solve, validate
-  → accept | deterministic fix | bounded repair | fallback
+  → accept | structured diagnostic
 ```
+
+```ts
+import { renderVisualPlan, visualPlanSchema } from "liveryscript";
+
+const plan = visualPlanSchema.parse(modelOutput);
+const result = renderVisualPlan(plan, { width: 720 });
+```
+
+Facts such as capacities, rates, protocols, and response codes belong in plan annotations rather than artificial nodes. Use the DSL contract below for custom components, canvases, timelines, sequences, schemas, state models, and other specialized authoring.
 
 <Cards>
   <Card title="Generation contract" description="Use release-matched language capabilities and a strict output boundary." href="/docs/agents/contract" />
@@ -20,7 +30,7 @@ user intent
   <Card title="Evaluation and security" description="Measure valid, useful output while keeping authority bounded." href="/docs/agents/evaluation-security" />
 </Cards>
 
-## Do not maintain the grammar by hand
+## DSL generation: do not maintain the grammar by hand
 
 ```ts
 import { createAgentGuide } from "liveryscript";

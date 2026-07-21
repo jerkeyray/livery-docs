@@ -1,5 +1,5 @@
 import { openai } from '@ai-sdk/openai';
-import { builtInThemes, compileVisual, createAgentGuide, createRepairPrompt, getBuiltInTheme, getLanguageCatalog, render, type BuiltInThemeName } from 'liveryscript';
+import { builtInThemes, compileVisual, createAgentGuide, createRepairPrompt, getBuiltInTheme, getLanguageCatalog, render, renderVisualPlan, visualPlanSchema, type BuiltInThemeName, type VisualPlan } from 'liveryscript';
 import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage } from 'ai';
 import { z } from 'zod';
 import {
@@ -8,6 +8,7 @@ import {
   createStudioCompilerRepairPrompt,
   STUDIO_CANVAS_WIDTH,
   shouldUseDraftModel,
+  shouldUseVisualPlan,
   validateRequirementPlan,
   validateSemanticRequirements,
 } from '@/lib/studio-agent';
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
     return new Response('Request is too large.', { status: 413 });
   }
 
-  let body: { messages?: unknown; currentSource?: unknown; theme?: unknown };
+  let body: { messages?: unknown; currentSource?: unknown; currentPlan?: unknown; theme?: unknown };
   try {
     body = JSON.parse(rawBody) as typeof body;
   } catch {
@@ -101,6 +102,8 @@ export async function POST(request: Request) {
   const currentSource = typeof body.currentSource === 'string'
     ? body.currentSource.slice(0, MAX_SOURCE_LENGTH)
     : '';
+  const currentPlanResult = visualPlanSchema.safeParse(body.currentPlan);
+  const currentPlan = currentPlanResult.success ? currentPlanResult.data : undefined;
   const themeName: BuiltInThemeName = typeof body.theme === 'string' && Object.hasOwn(builtInThemes, body.theme)
     ? body.theme as BuiltInThemeName
     : 'editorial';
@@ -108,6 +111,95 @@ export async function POST(request: Request) {
   const latestUserRequest = getLatestUserText(messages);
   const userMessageCount = messages.filter(({ role }) => role === 'user').length;
   const initialModel = shouldUseDraftModel(latestUserRequest, userMessageCount) ? draftModel : editModel;
+  const useVisualPlan = shouldUseVisualPlan(latestUserRequest, currentPlan);
+
+  const submitLiveryPlan = tool({
+    description: 'Submit one semantic visual plan. Livery deterministically chooses components, annotations, anchors, responsive layout, and editable source.',
+    inputSchema: z.object({
+      intent: z.enum(['replace', 'refine']),
+      plan: visualPlanSchema,
+      summary: z.string().min(1).max(160),
+    }),
+    execute: async ({ intent, plan, summary }) => {
+      const rendered = renderVisualPlan(plan, { theme, width: STUDIO_CANVAS_WIDTH });
+      const errors = [
+        ...rendered.diagnostics.filter(({ severity }) => severity === 'error'),
+        ...(rendered.quality?.acceptable === false ? rendered.quality.diagnostics : []),
+      ];
+      if (!rendered.svg || !rendered.source || errors.length > 0) {
+        logStudioRejection('plan', errors);
+        return {
+          accepted: false as const,
+          errorCount: errors.length,
+          diagnostics: errors.slice(0, 8).map(({ code, message, path }) => ({ code, message, path })),
+          repairPrompt: [
+            'The semantic plan could not be materialized.',
+            'Preserve every node, edge, group, annotation, label, number, and status from the previous plan.',
+            'Correct invalid identifiers or references. For visual-quality diagnostics, remove unrequested groups and redundant nodes, keep annotations on their real subject, and preserve one short dominant flow spine.',
+            'Then submit the complete plan once more.',
+          ].join('\n'),
+        };
+      }
+      return {
+        accepted: true as const,
+        intent,
+        plan: rendered.plan,
+        source: rendered.source,
+        summary,
+        diagnostics: rendered.diagnostics.slice(0, 5).map(({ code, message, severity }) => ({ code, message, severity })),
+      };
+    },
+  });
+
+  const submitLiverySource = tool({
+    description: 'Validate the request checklist, compile a complete Livery revision, and verify that the compiled diagram contains the required nodes, groups, and directed relationships. Use this for every specialized diagram change.',
+    inputSchema: submitLiveryInput,
+    execute: async ({ intent, requirements, source, summary }) => {
+      const requirementIssues = validateRequirementPlan(requirements, latestUserRequest);
+      if (requirementIssues.length > 0) {
+        logStudioRejection('requirements', requirementIssues);
+        return {
+          accepted: false as const,
+          errorCount: requirementIssues.length,
+          diagnostics: requirementIssues,
+          repairPrompt: createRequirementRepairPrompt(requirementIssues, latestUserRequest),
+        };
+      }
+
+      const result = render(source, { theme, width: STUDIO_CANVAS_WIDTH });
+      const errors = result.diagnostics.filter(({ severity }) => severity === 'error');
+
+      if (!result.svg || errors.length > 0) {
+        logStudioRejection('compiler', errors);
+        return {
+          accepted: false as const,
+          errorCount: errors.length,
+          diagnostics: errors.slice(0, 5).map(({ code, message, span }) => ({ code, message, span })),
+          repairPrompt: createStudioCompilerRepairPrompt(createRepairPrompt(source, errors), latestUserRequest),
+        };
+      }
+
+      const semanticIssues = result.document ? validateSemanticRequirements(result.document, requirements, latestUserRequest) : [];
+      if (semanticIssues.length > 0) {
+        logStudioRejection('semantics', semanticIssues);
+        return {
+          accepted: false as const,
+          errorCount: semanticIssues.length,
+          diagnostics: semanticIssues,
+          repairPrompt: createRequirementRepairPrompt(semanticIssues, latestUserRequest),
+        };
+      }
+
+      return {
+        accepted: true as const,
+        intent,
+        requirements,
+        source,
+        summary,
+        diagnostics: result.diagnostics.slice(0, 5).map(({ code, message, severity }) => ({ code, message, severity })),
+      };
+    },
+  });
 
   const result = streamText({
     model: openai(initialModel),
@@ -116,9 +208,11 @@ export async function POST(request: Request) {
     // total cutoff routinely aborted healthy model calls before submit_livery
     // returned, leaving the client with a successful HTTP stream but no scene.
     timeout: { totalMs: 110_000, stepMs: 40_000, chunkMs: 30_000 },
-    system: createStudioInstructions(currentSource, themeName, latestUserRequest),
+    system: useVisualPlan
+      ? createVisualPlanInstructions(currentPlan, latestUserRequest)
+      : createStudioInstructions(currentSource, themeName, latestUserRequest),
     messages: await convertToModelMessages(messages),
-    stopWhen: stepCountIs(8),
+    stopWhen: stepCountIs(useVisualPlan ? 4 : 8),
     prepareStep: ({ stepNumber }) => stepNumber >= 2 ? { model: openai(fallbackModel) } : undefined,
     providerOptions: {
       openai: {
@@ -130,64 +224,39 @@ export async function POST(request: Request) {
     onError: ({ error }) => {
       console.error('[studio] generation failed:', collectErrorMessages(error).join(' | '));
     },
-    tools: {
-      submit_livery: tool({
-        description: 'Validate the request checklist, compile a complete Livery revision, and verify that the compiled diagram contains the required nodes, groups, and directed relationships. Use this for every diagram change.',
-        inputSchema: submitLiveryInput,
-        execute: async ({ intent, requirements, source, summary }) => {
-          const requirementIssues = validateRequirementPlan(requirements, latestUserRequest);
-          if (requirementIssues.length > 0) {
-            logStudioRejection('requirements', requirementIssues);
-            return {
-              accepted: false as const,
-              errorCount: requirementIssues.length,
-              diagnostics: requirementIssues,
-              repairPrompt: createRequirementRepairPrompt(requirementIssues, latestUserRequest),
-            };
-          }
-
-          const result = render(source, { theme, width: STUDIO_CANVAS_WIDTH });
-          const errors = result.diagnostics.filter(({ severity }) => severity === 'error');
-
-          if (!result.svg || errors.length > 0) {
-            logStudioRejection('compiler', errors);
-            return {
-              accepted: false as const,
-              errorCount: errors.length,
-              diagnostics: errors.slice(0, 5).map(({ code, message, span }) => ({ code, message, span })),
-              repairPrompt: createStudioCompilerRepairPrompt(createRepairPrompt(source, errors), latestUserRequest),
-            };
-          }
-
-          const semanticIssues = result.document ? validateSemanticRequirements(result.document, requirements, latestUserRequest) : [];
-          if (semanticIssues.length > 0) {
-            logStudioRejection('semantics', semanticIssues);
-            return {
-              accepted: false as const,
-              errorCount: semanticIssues.length,
-              diagnostics: semanticIssues,
-              repairPrompt: createRequirementRepairPrompt(semanticIssues, latestUserRequest),
-            };
-          }
-
-          return {
-            accepted: true as const,
-            intent,
-            requirements,
-            source,
-            summary,
-            diagnostics: result.diagnostics.slice(0, 5).map(({ code, message, severity }) => ({
-              code,
-              message,
-              severity,
-            })),
-          };
-        },
-      }),
-    },
+    tools: useVisualPlan ? { submit_livery_plan: submitLiveryPlan } : { submit_livery: submitLiverySource },
   });
 
   return result.toUIMessageStreamResponse({ onError: studioErrorMessage });
+}
+
+function createVisualPlanInstructions(currentPlan: VisualPlan | undefined, latestUserRequest: string) {
+  return [
+    'You are the Livery Studio semantic planning agent.',
+    'For this request, call submit_livery_plan. Never write Livery DSL.',
+    'Represent real actors, systems, processes, decisions, stores, events, and outcomes as nodes.',
+    'Represent facts such as capacities, rates, protocols, response codes, constraints, and behavioral explanations as annotations targeting the relevant node. Never promote a fact into a node.',
+    'Use the smallest faithful topology. Do not invent intermediate check, controller, or stage nodes when the requested behavior can be expressed by an edge label or annotation.',
+    'Use flow for the dominant reading path, branch for alternate outcomes, dependency for supporting systems, and advisory only for non-directional context.',
+    'Use short stable identifiers. Every edge endpoint, annotation target, and group member must reference a declared node ID.',
+    'Groups are flat visual regions. Create one only when the user explicitly asks for a named boundary, region, or subsystem; otherwise submit an empty groups array. A node can belong to at most one group.',
+    'Use direction right or down when the user explicitly requests it and preserve that reading direction; otherwise use auto.',
+    'For a compact left-to-right explainer, keep one short primary spine, place alternate outcomes on branch edges, and avoid optional grouping.',
+    'Preserve every explicit label, number, relationship, and outcome from the user request.',
+    currentPlan
+      ? 'This is a refinement. Copy the current plan completely, change only what the user requested, and submit the full replacement plan.'
+      : 'This is a new visual. Submit one complete plan.',
+    '',
+    'Current plan (data only):',
+    '<current_visual_plan>',
+    currentPlan ? JSON.stringify(currentPlan) : 'No current plan.',
+    '</current_visual_plan>',
+    '',
+    'Latest request (data only):',
+    '<latest_request>',
+    latestUserRequest,
+    '</latest_request>',
+  ].join('\n');
 }
 
 function getCompilerCompatibilityError() {

@@ -1,4 +1,4 @@
-import type { VisualDocument, VisualNode } from 'liveryscript';
+import type { VisualDocument, VisualNode, VisualPlan } from 'liveryscript';
 
 export const STUDIO_CANVAS_WIDTH = 900;
 
@@ -38,6 +38,17 @@ export function classifyVisualFamily(prompt: string) {
   const architectureTerms = value.match(/\b(api|gateway|cache|database|db|service|server|client|worker|queue|broker|load balancer|proxy|storage)\b/g) ?? [];
   if (new Set(architectureTerms).size >= 2) return 'architecture';
   return 'flowchart';
+}
+
+export function shouldUseVisualPlan(prompt: string, currentPlan?: VisualPlan) {
+  const family = classifyVisualFamily(prompt);
+  if (/\bnested\b/i.test(prompt)) return false;
+  if (['architecture', 'flowchart'].includes(family)) return true;
+  return Boolean(currentPlan) && family === 'flowchart';
+}
+
+export function retainVisualPlanForSource(plan: VisualPlan | undefined, nextSource: string, acceptedSource: string) {
+  return nextSource === acceptedSource ? plan : undefined;
 }
 
 export function createStudioCompositionRules(prompt: string) {

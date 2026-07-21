@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="712" viewBox="0 0 600 712" role="img" aria-labelledby="agent_system-title agent_system-desc">
+  <title id="agent_system-title">Research agent system</title>
+  <desc id="agent_system-desc">Research agent system: 7 elements and 6 connections.</desc>
+  <rect width="600" height="712" fill="#080809"/>
+  <defs>
+    <marker id="agent_system-arrow-user-right--agent-left" markerWidth="5" markerHeight="5" refX="4.6" refY="2.5" orient="auto"><path d="M 0 0 L 5 2.5 L 0 5 z" fill="#75757f"/></marker>
+    <marker id="agent_system-arrow-agent-right--model-left" markerWidth="5" markerHeight="5" refX="4.6" refY="2.5" orient="auto"><path d="M 0 0 L 5 2.5 L 0 5 z" fill="#75757f"/></marker>
+    <marker id="agent_system-arrow-agent-bottom--search-top" markerWidth="5" markerHeight="5" refX="4.6" refY="2.5" orient="auto"><path d="M 0 0 L 5 2.5 L 0 5 z" fill="#75757f"/></marker>
+    <marker id="agent_system-arrow-search-right--memory-left" markerWidth="5" markerHeight="5" refX="4.6" refY="2.5" orient="auto"><path d="M 0 0 L 5 2.5 L 0 5 z" fill="#75757f"/></marker>
+    <marker id="agent_system-arrow-model-bottom--report-top" markerWidth="5" markerHeight="5" refX="4.6" refY="2.5" orient="auto"><path d="M 0 0 L 5 2.5 L 0 5 z" fill="#75757f"/></marker>
+    <marker id="agent_system-arrow-memory-right--report-left" markerWidth="5" markerHeight="5" refX="4.6" refY="2.5" orient="auto"><path d="M 0 0 L 5 2.5 L 0 5 z" fill="#75757f"/></marker>
+    <filter id="agent_system-card-shadow" x="-15%" y="-20%" width="130%" height="150%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#101828" flood-opacity="0.08"/></filter>
+    <pattern id="agent_system-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#18181b" stroke-width="1"/></pattern>
+  </defs>
+  <rect width="600" height="712" fill="url(#agent_system-grid)"/>
+  <text x="20" y="27" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="720" fill="#f4f4f5">Research agent system</text>
+  <g transform="translate(0 42)">
+    <g data-livery-connector="user-right--agent-left" data-livery-variant="directional">
+      <path data-livery-id="user-right--agent-left" d="M 300 92 L 300 134" fill="none" stroke="#75757f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#agent_system-arrow-user-right--agent-left)"/>
+      <rect x="304" y="104" width="25.314439999999998" height="18" rx="2" fill="#080809" fill-opacity="0.98"/>
+      <text x="316.65722" y="113" dominant-baseline="middle" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" font-weight="600" fill="#a1a1aa">ask</text>
+    </g>
+    <g data-livery-connector="agent-right--model-left" data-livery-variant="directional">
+      <path data-livery-id="agent-right--model-left" d="M 300 206 L 300 248" fill="none" stroke="#75757f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#agent_system-arrow-agent-right--model-left)"/>
+      <rect x="304" y="218" width="40.96403" height="18" rx="2" fill="#080809" fill-opacity="0.98"/>
+      <text x="324.482015" y="227" dominant-baseline="middle" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" font-weight="600" fill="#a1a1aa">reason</text>
+    </g>
+    <g data-livery-connector="agent-bottom--search-top" data-livery-variant="async">
+      <path data-livery-id="agent-bottom--search-top" d="M 300 206 L 300 218 L 160 218 Q 152 218 152 226 L 152 342 Q 152 350 160 350 L 300 350 L 300 362" fill="none" stroke="#75757f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 4" marker-end="url(#agent_system-arrow-agent-bottom--search-top)"/>
+      <rect x="156" y="275" width="35.19255" height="18" rx="2" fill="#080809" fill-opacity="0.98"/>
+      <text x="173.596275" y="284" dominant-baseline="middle" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" font-weight="600" fill="#a1a1aa">query</text>
+    </g>
+    <g data-livery-connector="search-right--memory-left" data-livery-variant="data">
+      <path data-livery-id="search-right--memory-left" d="M 300 426 L 300 468" fill="none" stroke="#75757f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 3"/>
+      <rect x="304" y="438" width="33.5277" height="18" rx="2" fill="#080809" fill-opacity="0.98"/>
+      <text x="320.76385" y="447" dominant-baseline="middle" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" font-weight="600" fill="#a1a1aa">store</text>
+    </g>
+    <g data-livery-connector="model-bottom--report-top" data-livery-variant="directional">
+      <path data-livery-id="model-bottom--report-top" d="M 300 320 L 300 332 L 440 332 Q 448 332 448 340 L 448 558 Q 448 566 440 566 L 300 566 L 300 578" fill="none" stroke="#75757f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#agent_system-arrow-model-bottom--report-top)"/>
+      <rect x="452" y="440" width="31.86285" height="18" rx="2" fill="#080809" fill-opacity="0.98"/>
+      <text x="467.931425" y="449" dominant-baseline="middle" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" font-weight="600" fill="#a1a1aa">draft</text>
+    </g>
+    <g data-livery-connector="memory-right--report-left" data-livery-variant="data">
+      <path data-livery-id="memory-right--report-left" d="M 300 536 L 300 578" fill="none" stroke="#75757f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 3"/>
+      <rect x="304" y="548" width="45.07066" height="18" rx="2" fill="#080809" fill-opacity="0.98"/>
+      <text x="326.53533" y="557" dominant-baseline="middle" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" font-weight="600" fill="#a1a1aa">context</text>
+    </g>
+    <g data-livery-id="user">
+      <rect x="234" y="24" width="132" height="68" rx="5" fill="#111113" stroke="#303034" stroke-width="1"/>
+      <g data-livery-glyph="person" transform="translate(255 49) scale(0.75)" fill="none" stroke="#a1a1aa" stroke-width="1.8666666666666665" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+        <path d="M20 21a8 8 0 0 0-16 0"/>
+        <path d="M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/>
+      </g>
+      <text x="288" y="62" text-anchor="start" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600" fill="#f4f4f5">
+        <tspan x="288" dy="0">User</tspan>
+      </text>
+    </g>
+    <g data-livery-id="agent">
+      <rect x="219.521807" y="134" width="160.95638599999998" height="72" rx="5" fill="#111113" stroke="#303034" stroke-width="1"/>
+      <g data-livery-glyph="agent" transform="translate(240.521807 161) scale(0.75)" fill="none" stroke="#a1a1aa" stroke-width="1.8666666666666665" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+        <path d="M12 8V4H8"/>
+        <path d="M8 4h8"/>
+        <path d="M5 8h14v11H5z"/>
+        <path d="M9 13h.01"/>
+        <path d="M15 13h.01"/>
+        <path d="M9 17h6"/>
+      </g>
+      <text x="274.52180699999997" y="174" text-anchor="start" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600" fill="#f4f4f5">
+        <tspan x="274.52180699999997" dy="0">Research agent</tspan>
+      </text>
+    </g>
+    <g data-livery-id="model">
+      <rect x="215.258782" y="248" width="169.48243599999998" height="72" rx="5" fill="#111113" stroke="#303034" stroke-width="1"/>
+      <g data-livery-glyph="model" transform="translate(236.258782 275) scale(0.75)" fill="none" stroke="#a1a1aa" stroke-width="1.8666666666666665" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+        <path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/>
+        <path d="M19 3v4"/>
+        <path d="M17 5h4"/>
+      </g>
+      <text x="270.258782" y="288" text-anchor="start" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600" fill="#f4f4f5">
+        <tspan x="270.258782" dy="0">Reasoning model</tspan>
+      </text>
+    </g>
+    <g data-livery-id="search">
+      <rect x="235.99918200000002" y="362" width="128.00163599999996" height="64" rx="5" fill="#111113" stroke="#303034" stroke-width="1"/>
+      <g data-livery-glyph="tool" transform="translate(252.99918200000002 385) scale(0.75)" fill="none" stroke="#a1a1aa" stroke-width="1.8666666666666665" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+        <path d="M14.7 6.3a4 4 0 0 0-5-5L7 4l3 3 2.7-.7 6.9 6.9a2 2 0 1 1-2.8 2.8l-6.9-6.9L9 12l-3-3-2.7 2.7a4 4 0 0 0 5 5"/>
+      </g>
+      <text x="282.999182" y="389" text-anchor="start" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600" fill="#f4f4f5">
+        <tspan x="282.999182" dy="0">Web</tspan>
+        <tspan x="282.999182" dy="18">search</tspan>
+      </text>
+    </g>
+    <g data-livery-id="memory">
+      <rect x="238" y="475" width="124" height="54" fill="#111113" stroke="#303034" stroke-width="1"/>
+      <ellipse cx="300" cy="475" rx="62" ry="7" fill="#111113" stroke="#303034" stroke-width="1"/>
+      <path d="M 238 529 A 62 7 0 0 0 362 529" fill="none" stroke="#303034" stroke-width="1"/>
+      <text x="300" y="506" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600" fill="#f4f4f5">
+        <tspan x="300" dy="0">Memory</tspan>
+      </text>
+    </g>
+    <g data-livery-id="report">
+      <rect x="232.90891699999997" y="578" width="134.182166" height="68" rx="5" fill="#111113" stroke="#303034" stroke-width="1"/>
+      <g data-livery-glyph="document" transform="translate(251.90891699999997 603) scale(0.75)" fill="none" stroke="#a1a1aa" stroke-width="1.8666666666666665" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+        <path d="M6 2h8l4 4v16H6z"/>
+        <path d="M14 2v5h5"/>
+        <path d="M9 13h6"/>
+        <path d="M9 17h6"/>
+      </g>
+      <text x="282.908917" y="607" text-anchor="start" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600" fill="#f4f4f5">
+        <tspan x="282.908917" dy="0">Final</tspan>
+        <tspan x="282.908917" dy="18">report</tspan>
+      </text>
+    </g>
+  </g>
+</svg>

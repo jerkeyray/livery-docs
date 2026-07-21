@@ -6,6 +6,8 @@ import {
   createStudioCompilerRepairPrompt,
   classifyVisualFamily,
   shouldUseDraftModel,
+  shouldUseVisualPlan,
+  retainVisualPlanForSource,
   validateRequirementPlan,
   validateSemanticRequirements,
 } from './studio-agent';
@@ -24,6 +26,17 @@ const source = `figure checkout("Checkout") {
 }`;
 
 describe('Studio generation contract', () => {
+  test('routes common connected visuals through semantic plans and preserves specialized DSL families', () => {
+    expect(shouldUseVisualPlan('Explain a token bucket rate limiter with accepted and rejected API requests.')).toBe(true);
+    expect(shouldUseVisualPlan('Show an OAuth request-response sequence.')).toBe(false);
+    expect(shouldUseVisualPlan('Draw a B-tree hierarchy.')).toBe(false);
+    expect(shouldUseVisualPlan('Show a nested application hierarchy.')).toBe(false);
+    const plan = { type: 'livery.plan', version: '0.1', id: 'existing', family: 'process', direction: 'auto', nodes: [{ id: 'a', label: 'A', kind: 'process' }], edges: [], annotations: [], groups: [] };
+    expect(shouldUseVisualPlan('Rename A', plan)).toBe(true);
+    expect(retainVisualPlanForSource(plan, 'same', 'same')).toBe(plan);
+    expect(retainVisualPlanForSource(plan, 'manual edit', 'accepted')).toBeUndefined();
+  });
+
   test('classifies original visual families before drafting', () => {
     expect(classifyVisualFamily('Show a request-response sequence between a client and API.')).toBe('sequence');
     expect(classifyVisualFamily('Model account and invoice cardinalities in a database schema.')).toBe('entity-model');
