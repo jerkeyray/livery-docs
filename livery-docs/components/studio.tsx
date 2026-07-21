@@ -80,20 +80,18 @@ export function Studio() {
       setGenerationError(nextError.message || 'Diagram generation failed before validation.');
     },
     onFinish: ({ message }) => {
-      for (const part of message.parts) {
-        const output = getSubmissionOutput(part);
-        if (!output?.accepted || !output.source) continue;
-        const plan = visualPlanSchema.safeParse(output.plan);
-        setAcceptedPlan(plan.success ? plan.data : undefined);
-        if (appliedSources.current.has(output.source)) continue;
-        appliedSources.current.add(output.source);
-        setSource(output.source);
-        setAcceptedSource(output.source);
-        setSourceDiagnostics([]);
-        setRevisions((current) => appendRevision(current, output.source!));
-        editingRevision.current = false;
-        setGenerationError('');
-      }
+      const output = message.parts.map(getSubmissionOutput).filter((candidate) => candidate?.accepted && candidate.source).at(-1);
+      if (!output?.source) return;
+      const plan = visualPlanSchema.safeParse(output.plan);
+      setAcceptedPlan(plan.success ? plan.data : undefined);
+      if (appliedSources.current.has(output.source)) return;
+      appliedSources.current.add(output.source);
+      setSource(output.source);
+      setAcceptedSource(output.source);
+      setSourceDiagnostics([]);
+      setRevisions((current) => appendRevision(current, output.source!));
+      editingRevision.current = false;
+      setGenerationError('');
     },
   });
   const busy = status === 'submitted' || status === 'streaming';
@@ -125,6 +123,7 @@ export function Studio() {
       source,
       acceptedSource,
       acceptedPlan,
+      ...(acceptedPlan ? { acceptedPlanSource: acceptedSource } : {}),
       input,
       theme: themeName,
       messages: messages.slice(-40),

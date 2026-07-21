@@ -11,6 +11,7 @@ export type StudioDraft = {
   source: string;
   acceptedSource: string;
   acceptedPlan?: VisualPlan;
+  acceptedPlanSource?: string;
   input: string;
   theme: BuiltInThemeName;
   messages: UIMessage[];
@@ -40,11 +41,12 @@ export function readStudioDraft(storage: ReadableStudioStorage, now = Date.now()
       || !Array.isArray(value.messages)
       || !value.messages.every(isUIMessage)) return undefined;
     const revisions = normalizeRevisionState(value.revisions, value.revisionIndex, value.acceptedSource);
-    const { savedAt: _savedAt, acceptedPlan: storedPlan, ...draft } = value;
+    const { savedAt: _savedAt, acceptedPlan: storedPlan, acceptedPlanSource, ...draft } = value;
     const planResult = visualPlanSchema.safeParse(storedPlan);
+    const planMatchesSource = typeof acceptedPlanSource === 'string' && acceptedPlanSource === value.acceptedSource;
     return {
       ...draft,
-      ...(planResult.success ? { acceptedPlan: planResult.data } : {}),
+      ...(planResult.success && planMatchesSource ? { acceptedPlan: planResult.data, acceptedPlanSource } : {}),
       revisions: revisions.entries,
       revisionIndex: revisions.index,
       sidebarWidth: value.sidebarWidth === undefined

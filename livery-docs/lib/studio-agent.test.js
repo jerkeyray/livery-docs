@@ -5,11 +5,13 @@ import {
   createStudioCompositionRules,
   createStudioCompilerRepairPrompt,
   classifyVisualFamily,
+  normalizeVisualPlanRequest,
   shouldUseDraftModel,
   shouldUseVisualPlan,
   retainVisualPlanForSource,
   validateRequirementPlan,
   validateSemanticRequirements,
+  validateVisualPlanRequest,
 } from './studio-agent';
 
 const source = `figure checkout("Checkout") {
@@ -31,8 +33,15 @@ describe('Studio generation contract', () => {
     expect(shouldUseVisualPlan('Show an OAuth request-response sequence.')).toBe(false);
     expect(shouldUseVisualPlan('Draw a B-tree hierarchy.')).toBe(false);
     expect(shouldUseVisualPlan('Show a nested application hierarchy.')).toBe(false);
+    expect(shouldUseVisualPlan('Explain nested retries between an API and cache.')).toBe(true);
+    expect(shouldUseVisualPlan('Make the cards wider and use dashed arrows.')).toBe(false);
+    expect(shouldUseVisualPlan('Create a token bucket explainer. Composition requirements: use exactly five nodes and a left-to-right flow.')).toBe(true);
+    expect(shouldUseVisualPlan('Create a token bucket explainer. Keep all text inside its allocated bounds and do not cross a card border.')).toBe(true);
     const plan = { type: 'livery.plan', version: '0.1', id: 'existing', family: 'process', direction: 'auto', nodes: [{ id: 'a', label: 'A', kind: 'process' }], edges: [], annotations: [], groups: [] };
+    expect(shouldUseVisualPlan('Move Rejected below the token bucket.', plan)).toBe(false);
     expect(shouldUseVisualPlan('Rename A', plan)).toBe(true);
+    expect(shouldUseVisualPlan('Rename A', undefined, true)).toBe(false);
+    expect(shouldUseVisualPlan('Create a new API flow', undefined, false)).toBe(true);
     expect(retainVisualPlanForSource(plan, 'same', 'same')).toBe(plan);
     expect(retainVisualPlanForSource(plan, 'manual edit', 'accepted')).toBeUndefined();
   });
@@ -42,9 +51,45 @@ describe('Studio generation contract', () => {
     expect(classifyVisualFamily('Model account and invoice cardinalities in a database schema.')).toBe('entity-model');
     expect(classifyVisualFamily('Draw an order lifecycle state machine.')).toBe('state-model');
     expect(classifyVisualFamily('Map requirements to verification evidence.')).toBe('requirement-model');
+    expect(classifyVisualFamily('Create a token bucket explainer. Composition requirements: use exactly five nodes.')).toBe('flowchart');
     expect(classifyVisualFamily('Draw a tree diagram explaining B-trees.')).toBe('tree-view');
     expect(classifyVisualFamily('Make a simple API flow with a gateway, DB, and cache.')).toBe('architecture');
     expect(classifyVisualFamily('Explain how Raft leader elections work.')).toBe('sequence');
+    expect(classifyVisualFamily('Explain request duration through an API and cache.')).toBe('architecture');
+  });
+
+  test('validates exact semantic-plan content against the active request', () => {
+    const prompt = `Create a technical explainer titled “Exact Flow”. Use a left-to-right layout. Use exactly two nodes:
+1. “Incoming” - Kind: client - No subtitle - No annotations
+2. “Accepted” - Kind: outcome - Success status - No subtitle - Include exactly one inline annotation:
+- “HTTP 200”
+Use exactly these relationships:
+- Incoming → Accepted
+- Edge kind: flow
+- Label: “allow”
+Use no groups.`;
+    const plan = {
+      type: 'livery.plan', version: '0.1', id: 'exact', title: 'Exact Flow', family: 'process', direction: 'right',
+      nodes: [{ id: 'incoming', label: 'Incoming', kind: 'client' }, { id: 'accepted', label: 'Accepted', kind: 'outcome', status: 'success' }],
+      edges: [{ id: 'allow', from: 'incoming', to: 'accepted', kind: 'flow', label: 'allow' }],
+      annotations: [{ id: 'http', target: 'accepted', text: 'HTTP 200', kind: 'fact' }], groups: [],
+    };
+    expect(validateVisualPlanRequest(plan, prompt)).toEqual([]);
+    const polluted = { ...plan, title: 'Wrong title', direction: 'down', nodes: plan.nodes.map((node) => ({ ...node, subtitle: `Generic ${node.label} explanation` })) };
+    expect(validateVisualPlanRequest(polluted, prompt).map(({ code }) => code))
+      .toEqual(expect.arrayContaining(['plan.request.title_mismatch', 'plan.request.direction_mismatch', 'plan.request.subtitle_forbidden']));
+    const normalized = normalizeVisualPlanRequest(polluted, prompt);
+    expect(normalized.title).toBe('Exact Flow');
+    expect(normalized.direction).toBe('right');
+    expect(normalized.nodes.every((node) => node.subtitle === undefined)).toBe(true);
+    expect(validateVisualPlanRequest(normalized, prompt)).toEqual([]);
+    expect(validateVisualPlanRequest({ ...plan, nodes: plan.nodes.slice(0, 1), edges: [] }, prompt).map(({ code }) => code))
+      .toEqual(expect.arrayContaining(['plan.request.node_count', 'plan.request.node_missing', 'plan.request.edge_missing']));
+
+    const unlabeledPrompt = `Use exactly these relationships:
+- Incoming → Accepted`;
+    expect(validateVisualPlanRequest({ ...plan, edges: [] }, unlabeledPrompt).map(({ code }) => code))
+      .toEqual(expect.arrayContaining(['plan.request.edge_missing', 'plan.request.edge_count']));
   });
 
   test('silently expands terse requests into a strong visual brief', () => {

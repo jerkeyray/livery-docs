@@ -6,9 +6,11 @@ import {
   createRequirementRepairPrompt,
   createStudioCompositionRules,
   createStudioCompilerRepairPrompt,
+  normalizeVisualPlanRequest,
   STUDIO_CANVAS_WIDTH,
   shouldUseDraftModel,
   shouldUseVisualPlan,
+  validateVisualPlanRequest,
   validateRequirementPlan,
   validateSemanticRequirements,
 } from '@/lib/studio-agent';
@@ -111,7 +113,7 @@ export async function POST(request: Request) {
   const latestUserRequest = getLatestUserText(messages);
   const userMessageCount = messages.filter(({ role }) => role === 'user').length;
   const initialModel = shouldUseDraftModel(latestUserRequest, userMessageCount) ? draftModel : editModel;
-  const useVisualPlan = shouldUseVisualPlan(latestUserRequest, currentPlan);
+  const useVisualPlan = shouldUseVisualPlan(latestUserRequest, currentPlan, currentSource.trim().length > 0);
 
   const submitLiveryPlan = tool({
     description: 'Submit one semantic visual plan. Livery deterministically chooses components, annotations, anchors, responsive layout, and editable source.',
@@ -121,7 +123,22 @@ export async function POST(request: Request) {
       summary: z.string().min(1).max(160),
     }),
     execute: async ({ intent, plan, summary }) => {
-      const rendered = renderVisualPlan(plan, { theme, width: STUDIO_CANVAS_WIDTH });
+      const normalizedPlan = normalizeVisualPlanRequest(plan, latestUserRequest);
+      const requestIssues = validateVisualPlanRequest(normalizedPlan, latestUserRequest);
+      if (requestIssues.length > 0) {
+        logStudioRejection('plan-request', requestIssues);
+        return {
+          accepted: false as const,
+          errorCount: requestIssues.length,
+          diagnostics: requestIssues.slice(0, 8),
+          repairPrompt: [
+            'The semantic plan does not faithfully match the user request.',
+            ...requestIssues.slice(0, 8).map(({ message }) => `- ${message}`),
+            'Submit one complete corrected plan. Preserve every explicitly requested node, edge, label, annotation, group, status, and emphasis; remove only content the user did not request.',
+          ].join('\n'),
+        };
+      }
+      const rendered = renderVisualPlan(normalizedPlan, { theme, width: STUDIO_CANVAS_WIDTH });
       const errors = [
         ...rendered.diagnostics.filter(({ severity }) => severity === 'error'),
         ...(rendered.quality?.acceptable === false ? rendered.quality.diagnostics : []),
@@ -134,8 +151,8 @@ export async function POST(request: Request) {
           diagnostics: errors.slice(0, 8).map(({ code, message, path }) => ({ code, message, path })),
           repairPrompt: [
             'The semantic plan could not be materialized.',
-            'Preserve every node, edge, group, annotation, label, number, and status from the previous plan.',
-            'Correct invalid identifiers or references. For visual-quality diagnostics, remove unrequested groups and redundant nodes, keep annotations on their real subject, and preserve one short dominant flow spine.',
+            'Preserve every explicitly requested node, edge, group, annotation, label, number, and status from the previous plan.',
+            'Correct invalid identifiers or references. For visual-quality diagnostics, remove only unrequested groups or redundant invented nodes, keep annotations on their real subject, and preserve one short dominant flow spine.',
             'Then submit the complete plan once more.',
           ].join('\n'),
         };
@@ -212,7 +229,7 @@ export async function POST(request: Request) {
       ? createVisualPlanInstructions(currentPlan, latestUserRequest)
       : createStudioInstructions(currentSource, themeName, latestUserRequest),
     messages: await convertToModelMessages(messages),
-    stopWhen: stepCountIs(useVisualPlan ? 4 : 8),
+    stopWhen: stepCountIs(useVisualPlan ? 2 : 8),
     prepareStep: ({ stepNumber }) => stepNumber >= 2 ? { model: openai(fallbackModel) } : undefined,
     providerOptions: {
       openai: {
@@ -235,8 +252,11 @@ function createVisualPlanInstructions(currentPlan: VisualPlan | undefined, lates
     'You are the Livery Studio semantic planning agent.',
     'For this request, call submit_livery_plan. Never write Livery DSL.',
     'Represent real actors, systems, processes, decisions, stores, events, and outcomes as nodes.',
+    'Every explicitly named outcome such as Accepted, Rejected, Success, or Failure must be its own outcome node. Never replace it with an edge label.',
     'Represent facts such as capacities, rates, protocols, response codes, constraints, and behavioral explanations as annotations targeting the relevant node. Never promote a fact into a node.',
     'Use the smallest faithful topology. Do not invent intermediate check, controller, or stage nodes when the requested behavior can be expressed by an edge label or annotation.',
+    'Keep node labels to three words and edge labels to three words whenever exact wording is not requested. Do not invent generic explanatory subtitles; use annotations only for facts the user actually requested.',
+    'When the user says a node has no subtitle, omit the subtitle field entirely. Do not use an empty string or substitute generic explanatory prose.',
     'Use flow for the dominant reading path, branch for alternate outcomes, dependency for supporting systems, and advisory only for non-directional context.',
     'Use short stable identifiers. Every edge endpoint, annotation target, and group member must reference a declared node ID.',
     'Groups are flat visual regions. Create one only when the user explicitly asks for a named boundary, region, or subsystem; otherwise submit an empty groups array. A node can belong to at most one group.',

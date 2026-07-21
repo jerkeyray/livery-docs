@@ -28,10 +28,13 @@ export function classifyVisualFamily(prompt: string) {
   if (/\b(state machine|state transition|lifecycle)\b/.test(value)) return 'state-model';
   if (/\b(class diagram|class model|inheritance|methods? and fields?)\b/.test(value)) return 'class-model';
   if (/\b(entity relationship|er diagram|database schema|cardinalit(?:y|ies))\b/.test(value)) return 'entity-model';
-  if (/\b(requirements?|verification|traceability|sysml)\b/.test(value)) return 'requirement-model';
+  if (/\b(?:requirements? (?:diagram|model|traceability)|verification (?:diagram|model|matrix)|traceability|sysml)\b/.test(value)
+    || /\brequirements?\b.{0,48}\b(?:verification|traceability|evidence)\b/.test(value)) return 'requirement-model';
   if (dataTreePattern.test(value)) return 'tree-view';
   if (/\b(governance|org(?:anizational)? chart|taxonomy|decision tree|reporting structure|hierarchy)\b/.test(value)) return 'tree-view';
-  if (/\b(gantt|schedule|milestone|duration)\b/.test(value)) return 'schedule';
+  if (/\b(gantt|schedule|milestones?)\b/.test(value)
+    || /\b(?:tasks?|projects?|phases?|timelines?)\b.{0,32}\bdurations?\b/.test(value)
+    || /\bdurations?\b.{0,32}\b(?:tasks?|projects?|phases?|timelines?)\b/.test(value)) return 'schedule';
   if (/\b(pie|proportion|share of)\b/.test(value)) return 'proportion';
   if (/\b(line chart|bar chart|area chart|xy plot)\b/.test(value)) return 'xy-plot';
   if (/\b(architecture|system|platform|service map|cloud)\b/.test(value)) return 'architecture';
@@ -40,9 +43,15 @@ export function classifyVisualFamily(prompt: string) {
   return 'flowchart';
 }
 
-export function shouldUseVisualPlan(prompt: string, currentPlan?: VisualPlan) {
+export function shouldUseVisualPlan(prompt: string, currentPlan?: VisualPlan, hasCurrentSource = false) {
   const family = classifyVisualFamily(prompt);
-  if (/\bnested\b/i.test(prompt)) return false;
+  const requestsUnsupportedStyling = /\b(?:make|set|change|use|apply|render)\b.{0,48}\b(?:background|theme|font|typeface|colou?r|dashed|dotted|stroke|border|shadow|opacity|width|height|spacing|gap|align(?:ment)?)\b/i.test(prompt)
+    || /\b(?:cards?|nodes?|components?)\s+(?:wider|narrower|taller|shorter)\b/i.test(prompt)
+    || /\b(?:wider|narrower|taller|shorter)\s+(?:cards?|nodes?|components?)\b/i.test(prompt);
+  const requestsManualPlacement = /\b(?:move|place|position|nudge|shift)\b.{0,48}\b(?:above|below|left|right|beside|under|over|closer|farther|top|bottom)\b/i.test(prompt);
+  const requestsNestedStructure = /\bnested\s+(?:groups?|frames?|boundaries|sections?|hierarch(?:y|ies))\b/i.test(prompt);
+  if (requestsUnsupportedStyling || requestsManualPlacement && Boolean(currentPlan) || requestsNestedStructure) return false;
+  if (hasCurrentSource && !currentPlan) return false;
   if (['architecture', 'flowchart'].includes(family)) return true;
   return Boolean(currentPlan) && family === 'flowchart';
 }
@@ -79,6 +88,129 @@ export type StudioRequirementIssue = {
   code: string;
   message: string;
 };
+
+export function normalizeVisualPlanRequest(plan: VisualPlan, prompt: string): VisualPlan {
+  const nodesWithoutSubtitles = new Set(exactNodeRequests(prompt)
+    .filter(({ instructions }) => /\bNo subtitle\b/i.test(instructions))
+    .map(({ label }) => normalize(label)));
+  const removeEverySubtitle = /\bno subtitles?\b/i.test(prompt) && nodesWithoutSubtitles.size === 0;
+  const title = requestedTitle(prompt);
+  const direction = requestedDirection(prompt);
+  if (!removeEverySubtitle && nodesWithoutSubtitles.size === 0 && !title && !direction) return plan;
+  return {
+    ...plan,
+    ...(title ? { title } : {}),
+    ...(direction ? { direction } : {}),
+    nodes: plan.nodes.map((node) => {
+      if (!removeEverySubtitle && !nodesWithoutSubtitles.has(normalize(node.label))) return node;
+      const { subtitle: _subtitle, ...withoutSubtitle } = node;
+      return withoutSubtitle;
+    }),
+  };
+}
+
+export function validateVisualPlanRequest(plan: VisualPlan, prompt: string): StudioRequirementIssue[] {
+  const issues: StudioRequirementIssue[] = [];
+  const nodeByLabel = new Map(plan.nodes.map((node) => [normalize(node.label), node]));
+  const title = requestedTitle(prompt);
+  if (title && plan.title !== title) issues.push({ code: 'plan.request.title_mismatch', message: `The visual title must be exactly “${title}”.` });
+  const direction = requestedDirection(prompt);
+  if (direction && plan.direction !== direction) issues.push({ code: 'plan.request.direction_mismatch', message: `The visual direction must be ${direction}.` });
+  const exactCount = prompt.match(/\bexactly\s+(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+nodes?\b/i);
+  const expectedNodeCount = exactCount
+    ? ({ one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 }[exactCount[1]!.toLowerCase()] ?? Number(exactCount[1]))
+    : undefined;
+  if (expectedNodeCount && plan.nodes.length !== expectedNodeCount) {
+    issues.push({ code: 'plan.request.node_count', message: `The request requires exactly ${expectedNodeCount} nodes, but the plan contains ${plan.nodes.length}.` });
+  }
+  if (/\bno\s+(?:groups|frames)\b/i.test(prompt) && plan.groups.length > 0) {
+    issues.push({ code: 'plan.request.groups_forbidden', message: 'The request explicitly forbids groups and frames.' });
+  }
+
+  for (const { label, instructions } of exactNodeRequests(prompt)) {
+    const node = nodeByLabel.get(normalize(label));
+    if (!node) {
+      issues.push({ code: 'plan.request.node_missing', message: `The exact requested node “${label}” is missing.` });
+      continue;
+    }
+    const kind = instructions.match(/\bKind:\s*([a-z]+)/i)?.[1]?.toLowerCase();
+    if (kind && node.kind !== kind) issues.push({ code: 'plan.request.node_kind', message: `“${label}” must use node kind ${kind}.` });
+    if (/\bEmphasized\b/i.test(instructions) && !node.emphasis) issues.push({ code: 'plan.request.node_emphasis', message: `“${label}” must be emphasized.` });
+    const status = instructions.match(/\b(Success|Danger|Warning|Info) status\b/i)?.[1]?.toLowerCase();
+    if (status && node.status !== status) issues.push({ code: 'plan.request.node_status', message: `“${label}” must use ${status} status.` });
+    if (/\bNo subtitle\b/i.test(instructions) && node.subtitle) issues.push({ code: 'plan.request.subtitle_forbidden', message: `“${label}” must not have a subtitle.` });
+    const actualAnnotations = plan.annotations.filter(({ target }) => target === node.id).map(({ text }) => text);
+    if (/\bNo annotations\b/i.test(instructions) && actualAnnotations.length) {
+      issues.push({ code: 'plan.request.annotations_forbidden', message: `“${label}” must not have annotations.` });
+    }
+    const requestedAnnotations = [...instructions.matchAll(/^\s*-\s*[“"]([^”"\n]+)[”"]\s*$/gm)].map((annotation) => annotation[1]!.trim());
+    if (requestedAnnotations.length) {
+      const requested = requestedAnnotations.map(normalize).sort();
+      const actual = actualAnnotations.map(normalize).sort();
+      if (requested.length !== actual.length || requested.some((text, index) => text !== actual[index])) {
+        issues.push({ code: 'plan.request.annotations_mismatch', message: `“${label}” must contain exactly these annotations: ${requestedAnnotations.join(', ')}.` });
+      }
+    }
+  }
+
+  const requestedEdges = exactEdgeRequests(prompt);
+  for (const { fromLabel, toLabel, kind, label } of requestedEdges) {
+    const from = nodeByLabel.get(normalize(fromLabel));
+    const to = nodeByLabel.get(normalize(toLabel));
+    const edge = from && to ? plan.edges.find((candidate) => candidate.from === from.id && candidate.to === to.id) : undefined;
+    if (!edge) issues.push({ code: 'plan.request.edge_missing', message: `The requested relationship “${fromLabel} → ${toLabel}” is missing.` });
+    else if (kind && edge.kind !== kind || label !== undefined && edge?.label !== label) {
+      const expectation = [kind ? `a ${kind} edge` : undefined, label !== undefined ? `labeled “${label}”` : undefined].filter(Boolean).join(' ');
+      issues.push({ code: 'plan.request.edge_mismatch', message: `“${fromLabel} → ${toLabel}” must be ${expectation}.` });
+    }
+  }
+  if (/\bUse exactly these relationships\b/i.test(prompt) && requestedEdges.length > 0 && plan.edges.length !== requestedEdges.length) {
+    issues.push({ code: 'plan.request.edge_count', message: `The request specifies exactly ${requestedEdges.length} relationships, but the plan contains ${plan.edges.length}.` });
+  }
+  return issues;
+}
+
+function exactNodeRequests(prompt: string) {
+  const nodePattern = /(?:^|\n)\s*\d+\.\s*[“"]([^”"\n]+)[”"]([\s\S]*?)(?=\n\s*\d+\.|\n\s*Use exactly these relationships:|$)/g;
+  return [...prompt.matchAll(nodePattern)].map((match) => ({ label: match[1]!.trim(), instructions: match[2] ?? '' }));
+}
+
+function requestedTitle(prompt: string) {
+  return prompt.match(/\btitled\s+[“"]([^”"\n]+)[”"]/i)?.[1]?.trim();
+}
+
+function requestedDirection(prompt: string): 'right' | 'down' | undefined {
+  if (/\bleft[- ]to[- ]right\b/i.test(prompt) || /\bdirection\s+(?:(?:must\s+be|is)\s+|:\s*)?right\b/i.test(prompt)) return 'right';
+  if (/\btop[- ]to[- ]bottom\b/i.test(prompt) || /\bdirection\s+(?:(?:must\s+be|is)\s+|:\s*)?down\b/i.test(prompt)) return 'down';
+  return undefined;
+}
+
+function exactEdgeRequests(prompt: string) {
+  const marker = /\bUse exactly these relationships\s*:/i.exec(prompt);
+  if (!marker) return [];
+  const section = prompt.slice(marker.index + marker[0].length)
+    .split(/\n\s*(?:Composition requirements|Layout requirements|Constraints|Notes)\s*:/i)[0] ?? '';
+  const requests: Array<{ fromLabel: string; toLabel: string; kind?: 'flow' | 'branch' | 'dependency' | 'advisory'; label?: string }> = [];
+  for (const rawLine of section.split(/\r?\n/)) {
+    const line = rawLine.trim().replace(/^[-*]\s*/, '');
+    const relationship = line.match(/^(.+?)\s*→\s*(.+?)\s*$/);
+    if (relationship) {
+      requests.push({ fromLabel: unquote(relationship[1]!), toLabel: unquote(relationship[2]!) });
+      continue;
+    }
+    const current = requests.at(-1);
+    if (!current) continue;
+    const kind = line.match(/^Edge kind:\s*(flow|branch|dependency|advisory)\s*$/i)?.[1]?.toLowerCase() as typeof current.kind;
+    if (kind) current.kind = kind;
+    const label = line.match(/^Label:\s*[“"]?(.+?)[”"]?\s*$/i)?.[1]?.trim();
+    if (label !== undefined) current.label = label;
+  }
+  return requests;
+}
+
+function unquote(value: string) {
+  return value.trim().replace(/^[“"]|[”"]$/g, '');
+}
 
 export function shouldUseDraftModel(prompt: string, userMessageCount: number) {
   if (userMessageCount <= 1) return true;

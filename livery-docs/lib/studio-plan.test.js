@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { compileProgram, renderVisualPlan, visualPlanSchema } from 'liveryscript';
 
 const tokenBucket = {
-  type: 'livery.plan', version: '0.1', id: 'token_bucket', title: 'Token bucket limiter', family: 'explainer', direction: 'right',
+  type: 'livery.plan', version: '0.1', id: 'token_bucket', title: 'Token Bucket Rate Limiter', family: 'explainer', direction: 'right',
   nodes: [
     { id: 'requests', label: 'Incoming requests', kind: 'client' },
     { id: 'bucket', label: 'Token bucket', kind: 'process', emphasis: true },
@@ -11,15 +11,16 @@ const tokenBucket = {
     { id: 'rejected', label: 'Rejected', kind: 'outcome', status: 'danger' },
   ],
   edges: [
-    { id: 'arrive', from: 'requests', to: 'bucket', label: 'request', kind: 'flow' },
-    { id: 'allow', from: 'bucket', to: 'accepted', label: 'consume 1 token', kind: 'flow' },
-    { id: 'continue', from: 'accepted', to: 'service', kind: 'flow' },
+    { id: 'arrive', from: 'requests', to: 'bucket', label: 'check', kind: 'flow' },
+    { id: 'allow', from: 'bucket', to: 'accepted', label: 'allow', kind: 'flow' },
+    { id: 'continue', from: 'accepted', to: 'service', label: 'forward', kind: 'flow' },
     { id: 'deny', from: 'bucket', to: 'rejected', label: 'empty', kind: 'branch' },
   ],
   annotations: [
-    { id: 'capacity', target: 'bucket', text: 'Capacity: 10 tokens', kind: 'constraint' },
-    { id: 'refill', target: 'bucket', text: 'Refill: 2 tokens per second', kind: 'behavior' },
-    { id: 'burst', target: 'bucket', text: 'Burst capacity: 10 immediate requests', kind: 'behavior' },
+    { id: 'capacity', target: 'bucket', text: 'Capacity: 10', kind: 'constraint' },
+    { id: 'refill', target: 'bucket', text: 'Refill: 2/sec', kind: 'behavior' },
+    { id: 'cost', target: 'bucket', text: 'Cost: 1 token/request', kind: 'behavior' },
+    { id: 'burst', target: 'bucket', text: 'Burst: up to 10', kind: 'behavior' },
     { id: 'status', target: 'rejected', text: 'HTTP 429', kind: 'fact' },
   ],
   groups: [],
@@ -30,8 +31,12 @@ describe('Studio semantic plan integration', () => {
     expect(visualPlanSchema.safeParse(tokenBucket).success).toBe(true);
     const rendered = renderVisualPlan(tokenBucket, { width: 900 });
     expect(rendered.diagnostics).toEqual([]);
+    expect(rendered.quality.acceptable).toBe(true);
     expect(rendered.svg).toContain('HTTP 429');
-    expect(rendered.svg).toContain('Burst capacity: 10 immediate requests');
+    expect(rendered.svg).toContain('Cost: 1 token/request');
+    expect(rendered.svg).toContain('Burst: up to 10');
+    expect(rendered.source).not.toContain('__livery_annotation_');
+    expect(rendered.scene.elements.find(({ id }) => id === 'bucket').bounds.height).toBeGreaterThan(86);
     expect(compileProgram(rendered.source).diagnostics).toEqual([]);
   });
 

@@ -27,9 +27,15 @@ describe('Studio draft storage', () => {
 
   test('round-trips a semantic plan and ignores a malformed optional plan', () => {
     const values = new Map();
-    writeStudioDraft({ setItem: (key, value) => values.set(key, value) }, { ...draft, acceptedPlan }, 1_000);
+    writeStudioDraft({ setItem: (key, value) => values.set(key, value) }, { ...draft, acceptedPlan, acceptedPlanSource: draft.acceptedSource }, 1_000);
     expect(readStudioDraft({ getItem: (key) => values.get(key) ?? null }, 1_000)?.acceptedPlan).toEqual(acceptedPlan);
     expect(readStudioDraft({ getItem: () => JSON.stringify({ ...draft, acceptedPlan: { broken: true } }) })).toEqual(draft);
+  });
+
+  test('drops a valid plan that is not bound to the accepted source', () => {
+    const restored = readStudioDraft({ getItem: () => JSON.stringify({ ...draft, acceptedPlan, acceptedPlanSource: 'figure stale {}' }) });
+    expect(restored?.acceptedPlan).toBeUndefined();
+    expect(restored?.acceptedPlanSource).toBeUndefined();
   });
 
   test('expires and removes an inactive draft after 24 hours', () => {
