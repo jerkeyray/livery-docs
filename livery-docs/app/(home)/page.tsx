@@ -14,7 +14,6 @@ const heroHighlights = [
   ['02', 'Deterministic output', 'The same source produces the same diagram.'],
   ['03', 'Retained state', 'Update existing visuals safely.'],
 ];
-
 function GitHubMark({ size = 17 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -34,7 +33,6 @@ export default function HomePage() {
         <div className="landing-nav-links">
           <Link href="/studio">Studio</Link>
           <Link href="/docs">Docs</Link>
-          <Link href="/docs/examples">Examples</Link>
         </div>
         <div className="landing-nav-actions">
           <a
@@ -52,7 +50,7 @@ export default function HomePage() {
       <section className="hero-section">
         <div className="hero-copy">
           <div className="eyebrow">
-            Built for agents &amp; humans
+            A programmable diagram language
           </div>
           <h1>
             <span className="hero-title-main">Make<br />systems</span>
@@ -84,22 +82,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="hero-next-peek" aria-label="Livery workflow">
-        <strong>From source to system in seconds.</strong>
-        <div>
-          <span><i>01</i> Describe</span>
-          <span><i>02</i> Validate</span>
-          <span><i>03</i> Render</span>
-        </div>
-      </section>
-
       <section className="manifesto-section" id="geometry">
         <div className="manifesto-copy">
-          <span className="section-index">01 / Geometry first</span>
-          <h2>Bad geometry never makes it to the canvas.</h2>
+          <span className="section-index">01 / Why Livery</span>
+          <h2>Diagrams that stay correct as they change.</h2>
           <p>
-            Livery checks bounds, collisions, text, and connectors before a renderer receives the scene. Failures return typed diagnostics.
+            Mermaid is excellent for diagrams that live in documentation. Livery is for diagrams that live in products: re-solved at every width, checked before render, and safe to update from changing source.
           </p>
+          <div className="manifesto-points" aria-label="Livery runtime advantages">
+            <span><strong>01</strong> Responsive solving</span>
+            <span><strong>02</strong> Geometry validation</span>
+            <span><strong>03</strong> Retained revisions</span>
+          </div>
         </div>
         <div className="validation-card">
           <div className="validation-head"><span>geometry.report</span><span className="valid-pill"><Check size={11} /> passed</span></div>
@@ -141,11 +135,11 @@ export default function HomePage() {
           <Image src="/livery-mark.svg" alt="" width={74} height={74} />
         </div>
         <div className="closing-copy">
-          <span className="section-index"><Sparkles size={12} /> Start with a scene</span>
-          <h2>Give your agent<br />a visual vocabulary.</h2>
-          <p>Readable source in. Reliable geometry out.</p>
+          <span className="section-index"><Sparkles size={12} /> Ready to compile</span>
+          <h2>Write the diagram.<br />Ship the result.</h2>
+          <p>Readable source in. Reliable geometry everywhere.</p>
           <Link href="/studio" className="primary-button">
-            Try it in Studio <ArrowRight size={17} />
+            Open Studio <ArrowRight size={17} />
           </Link>
         </div>
       </section>

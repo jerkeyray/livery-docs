@@ -30,6 +30,12 @@ export function HeroDemo() {
       <span className="hero-compile-arrow" aria-hidden="true"><ArrowRight size={14} /></span>
 
       <div className="hero-output-card">
+        <div className="hero-diagram-tabs" aria-label="Supported diagram families">
+          <span className="is-active">Flowchart</span>
+          <span>Sequence</span>
+          <span>Architecture</span>
+          <span>State</span>
+        </div>
         <span className="hero-output-valid"><Check size={11} /> valid geometry</span>
         <Image
           className="hero-figure-wide"
